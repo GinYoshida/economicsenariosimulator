@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync
+
+      - name: Run pytest
+        run: uv run pytest
+
+  # ---------------------------------------------------------------------------
+  # PLACEHOLDER: frontend job (Next.js / vitest) is intentionally not defined
+  # yet. Task M0-2 will add a `frontend` job here (npm ci && npm test &&
+  # npm run build). Do NOT remove this placeholder until M0-2 fills it in.
+  # ---------------------------------------------------------------------------
