@@ -20,8 +20,23 @@ jobs:
       - name: Run pytest
         run: uv run pytest
 
-  # ---------------------------------------------------------------------------
-  # PLACEHOLDER: frontend job (Next.js / vitest) is intentionally not defined
-  # yet. Task M0-2 will add a `frontend` job here (npm ci && npm test &&
-  # npm run build). Do NOT remove this placeholder until M0-2 fills it in.
-  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run vitest
+        run: npm test
+
+      - name: Build
+        run: npm run build

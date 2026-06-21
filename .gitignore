@@ -4,3 +4,13 @@ __pycache__/
 node_modules/
 .next/
 .venv/
+
+# Next.js / frontend
+/out/
+/coverage
+/build
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+.DS_Store
+*.pem
