@@ -25,6 +25,29 @@ def _seasonal_dummies(index: pd.DatetimeIndex, drop_first: bool) -> pd.DataFrame
     return dummies
 
 
+def build_design(
+    panel: pd.DataFrame,
+    *,
+    lags: dict[str, int],
+    add_seasonal: bool = True,
+    drop_first_season: bool = True,
+) -> pd.DataFrame:
+    """全行（NaN を落とさない）の説明変数行列を作る。
+
+    ラグ列 ``<col>__lag<n>`` ＋（任意で）月の季節ダミー。予測時に未来行の
+    特徴量を組むためにも使う。
+    """
+    X = pd.DataFrame(index=panel.index)
+    for col, lag in lags.items():
+        if col not in panel.columns:
+            raise KeyError(f"driver column missing from panel: {col}")
+        X[f"{col}__lag{lag}"] = panel[col].shift(lag)
+
+    if add_seasonal:
+        X = pd.concat([X, _seasonal_dummies(panel.index, drop_first_season)], axis=1)
+    return X
+
+
 def make_features(
     panel: pd.DataFrame,
     category: str,
@@ -41,15 +64,8 @@ def make_features(
         raise KeyError(f"target column missing from panel: {target_col}")
 
     y = panel[target_col].rename("y")
-
-    X = pd.DataFrame(index=panel.index)
-    for col, lag in lags.items():
-        if col not in panel.columns:
-            raise KeyError(f"driver column missing from panel: {col}")
-        X[f"{col}__lag{lag}"] = panel[col].shift(lag)
-
-    if add_seasonal:
-        X = pd.concat([X, _seasonal_dummies(panel.index, drop_first_season)], axis=1)
-
+    X = build_design(
+        panel, lags=lags, add_seasonal=add_seasonal, drop_first_season=drop_first_season
+    )
     data = pd.concat([y, X], axis=1).dropna()
     return data.drop(columns=["y"]), data["y"]

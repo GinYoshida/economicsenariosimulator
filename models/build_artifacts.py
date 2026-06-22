@@ -24,13 +24,18 @@ from etl.store import list_series, read_series
 from models.features import TARGET_BY_CATEGORY, make_features
 from models.nowcast import nowcast_target
 from models.ols import FitResult, fit_ols, predict
+from models.backtest import run_backtest
 from models.schema import (
+    Backtest,
     Baseline,
     BaselinePoint,
     CategoryModel,
     Coefficients,
     DriverCoef,
 )
+
+BACKTEST_HORIZON = 3
+BACKTEST_MIN_TRAIN = 24
 
 MODEL_VERSION = "v1"
 FORECAST_MONTHS = 3
@@ -203,6 +208,21 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
         ),
     )
 
+    # --- backtest.json ---
+    backtest = Backtest(
+        metrics=[
+            run_backtest(
+                panel,
+                cat,
+                lags=fits[cat][1],
+                horizon=BACKTEST_HORIZON,
+                min_train=BACKTEST_MIN_TRAIN,
+            )
+            for cat in categories
+        ],
+        window=f"expanding, horizon={BACKTEST_HORIZON}, min_train={BACKTEST_MIN_TRAIN}",
+    )
+
     # --- sources.json ---
     sources = []
     for sid in list_series(con):
@@ -222,12 +242,14 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
     paths = {
         "coefficients": out_dir / "coefficients.json",
         "baseline": out_dir / "baseline.json",
+        "backtest": out_dir / "backtest.json",
         "sources": out_dir / "sources.json",
     }
     paths["coefficients"].write_text(
         coeffs.model_dump_json(indent=2), encoding="utf-8"
     )
     paths["baseline"].write_text(baseline.model_dump_json(indent=2), encoding="utf-8")
+    paths["backtest"].write_text(backtest.model_dump_json(indent=2), encoding="utf-8")
     paths["sources"].write_text(
         json.dumps(sources, ensure_ascii=False, indent=2), encoding="utf-8"
     )

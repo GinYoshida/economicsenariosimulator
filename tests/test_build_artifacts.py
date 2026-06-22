@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from models.build_artifacts import build_artifacts
-from models.schema import Baseline, Coefficients
+from models.schema import Backtest, Baseline, Coefficients
 from etl.provenance import Source
 from etl.store import init_db, write_series
 
@@ -69,6 +69,11 @@ def test_build_artifacts_writes_valid_schema_files(tmp_path):
     baseline = Baseline(**json.loads(base_path.read_text(encoding="utf-8")))
     assert baseline.history  # non-empty history
     assert len(baseline.forecast) == 3  # 3-month model-driven horizon
+
+    bt_path = tmp_path / "backtest.json"
+    assert bt_path.exists()
+    backtest = Backtest(**json.loads(bt_path.read_text(encoding="utf-8")))
+    assert {m.category for m in backtest.metrics} == {"food", "clothing"}
 
 
 def test_sources_json_lists_provenance(tmp_path):
