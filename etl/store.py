@@ -116,3 +116,12 @@ def read_series(
         frequency=meta[6],
     )
     return df, source
+
+
+def list_series(con: duckdb.DuckDBPyConnection) -> list[str]:
+    """登録済みの series_id を昇順で返す。"""
+    init_db(con)
+    rows = con.execute(
+        f"SELECT series_id FROM {_SOURCES_TABLE} ORDER BY series_id"
+    ).fetchall()
+    return [r[0] for r in rows]
