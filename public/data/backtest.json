@@ -1,0 +1,25 @@
+{
+  "metrics": [
+    {
+      "category": "food",
+      "mae": 0.019344236338750098,
+      "rmse": 0.02272910660305086,
+      "direction_hit": 0.6,
+      "naive_mae": 0.015370876103096464,
+      "naive_rmse": 0.01955716202809943,
+      "naive_direction_hit": 0.6,
+      "beats_naive": false
+    },
+    {
+      "category": "clothing",
+      "mae": 0.03472520746882453,
+      "rmse": 0.044747336532560876,
+      "direction_hit": 0.3,
+      "naive_mae": 0.03310775791446761,
+      "naive_rmse": 0.0375085217377609,
+      "naive_direction_hit": 0.3,
+      "beats_naive": false
+    }
+  ],
+  "window": "expanding, horizon=3, min_train=24"
+}
