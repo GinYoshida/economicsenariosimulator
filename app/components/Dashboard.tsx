@@ -25,6 +25,7 @@ import {
   type Preset,
 } from "@/app/lib/presets";
 import { computeForecast, decompose } from "@/app/lib/scenario";
+import { narrate } from "@/app/lib/narrate";
 
 const MONTHS = 12;
 const PRESET_LABELS: Record<Preset, string> = {
@@ -217,6 +218,9 @@ export default function Dashboard({
             </button>
           ))}
         </div>
+        <p data-testid="narration" className="mt-2 text-sm text-gray-700">
+          {narrate(contributions)}
+        </p>
         <DecompositionChart contributions={contributions} />
       </div>
 
