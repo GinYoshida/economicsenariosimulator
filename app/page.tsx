@@ -1,14 +1,69 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import Dashboard from "@/app/components/Dashboard";
+import {
+  loadBacktest,
+  loadBaseline,
+  loadCoefficients,
+  loadSources,
+  type Backtest,
+  type Baseline,
+  type Coefficients,
+  type SourceMeta,
+} from "@/app/lib/artifacts";
+
+type Artifacts = {
+  coefficients: Coefficients;
+  baseline: Baseline;
+  backtest: Backtest;
+  sources: SourceMeta[];
+};
+
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md text-center">
-        <h1 className="text-xl font-semibold sm:text-2xl">
-          消費シナリオシミュレータ
-        </h1>
-        <p className="mt-4 text-base text-gray-500" role="status">
+  const [data, setData] = useState<Artifacts | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      loadCoefficients(),
+      loadBaseline(),
+      loadBacktest(),
+      loadSources(),
+    ])
+      .then(([coefficients, baseline, backtest, sources]) =>
+        setData({ coefficients, baseline, backtest, sources }),
+      )
+      .catch((e: unknown) => setError(String(e)));
+  }, []);
+
+  if (error) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-4">
+        <p role="alert" className="text-sm text-red-600">
+          データの読み込みに失敗しました: {error}
+        </p>
+      </main>
+    );
+  }
+
+  if (!data) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
+        <p className="text-base text-gray-500" role="status">
           Loading scenarios…
         </p>
-      </div>
-    </main>
+      </main>
+    );
+  }
+
+  return (
+    <Dashboard
+      coefficients={data.coefficients}
+      baseline={data.baseline}
+      backtest={data.backtest}
+      sources={data.sources}
+    />
   );
 }
