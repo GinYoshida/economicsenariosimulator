@@ -1,0 +1,57 @@
+name: Batch (refresh artifacts)
+
+# 定期バッチ: 公的API/先物からデータを取得 → DuckDB → 成果物JSONを生成し、
+# public/data/*.json の差分のみをこのブランチにコミットする。
+#
+# いまは手動実行（workflow_dispatch）のみ。実データで一度グリーンになる条件:
+#   1. リポジトリ Secrets に ESTAT_APP_ID を登録
+#   2. レジストリの未確定パラメータを確定
+#      - e-Stat: stats_data_id（getStatsList 探索）
+#      - 日銀: csv_url（series_code からのCSVダウンロードURL）
+#      - 内閣府: Excel のダウンロードURL/レイアウト（cao_provider 実装）
+# これらが揃ったら、下の schedule のコメントを外して定期実行を有効化する。
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "0 1 4-10 * *"   # 家計調査公表期（毎月上旬・JST昼前後）
+  #   - cron: "0 20 * * *"     # 先物の日次更新
+
+permissions:
+  contents: write
+
+concurrency:
+  group: batch-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Build artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync
+
+      - name: Run ETL into DuckDB
+        env:
+          ESTAT_APP_ID: ${{ secrets.ESTAT_APP_ID }}
+        run: uv run python -m etl.run --db data/warehouse.duckdb
+
+      - name: Build artifacts
+        run: uv run python -m models.build_artifacts --db data/warehouse.duckdb --out public/data
+
+      - name: Commit refreshed artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- public/data; then
+            echo "No artifact changes."
+          else
+            git add public/data/*.json
+            git commit -m "chore(data): refresh artifacts [skip ci]"
+            git push
+          fi
