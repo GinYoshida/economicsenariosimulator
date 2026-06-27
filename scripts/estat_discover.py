@@ -113,6 +113,34 @@ def explore(client: httpx.Client, app_id: str, label: str, stats_code: str,
             print(f"      (meta error: {e})")
 
 
+# 確定した統計表の全軸（CLASS_OBJ）を出力して、cdArea/cdTab 等の絞り込み
+# コードを確定するための対象。
+TABLES_TO_INSPECT = ["0002070001", "0003427113"]
+
+
+def inspect_table(client: httpx.Client, app_id: str, stats_data_id: str) -> None:
+    print("\n" + "#" * 72)
+    print(f"INSPECT statsDataId={stats_data_id}")
+    meta = _get(client, "getMetaInfo", {"appId": app_id, "statsDataId": stats_data_id})
+    info = meta.get("GET_META_INFO", {}).get("METADATA_INF", {})
+    title = info.get("TABLE_INF", {})
+    print(f"  title: {_text(title.get('STATISTICS_NAME'))} / {_text(title.get('TITLE'))}")
+    for obj in _as_list(info.get("CLASS_INF", {}).get("CLASS_OBJ")):
+        axis_id = obj.get("@id")
+        axis_name = obj.get("@name")
+        classes = _as_list(obj.get("CLASS"))
+        print(f"  AXIS {axis_id} ({axis_name}) n={len(classes)}")
+        if axis_id == "cat01":
+            # 品目は多いので食料/被服のみ表示。
+            for cls in classes:
+                if any(h in cls.get("@name", "") for h in CATEGORY_HINTS):
+                    print(f"      code={cls.get('@code')} name={cls.get('@name')} level={cls.get('@level')}")
+        else:
+            # tab/area/time など軸の先頭数件を表示。
+            for cls in classes[:10]:
+                print(f"      code={cls.get('@code')} name={cls.get('@name')}")
+
+
 def main() -> int:
     app_id = os.environ.get("ESTAT_APP_ID", "").strip()
     if not app_id:
@@ -120,10 +148,8 @@ def main() -> int:
         return 2
     try:
         with httpx.Client() as client:
-            explore(client, app_id, "家計調査", STATS_CODE_KAKEI,
-                    title_must_have=["二人以上"])
-            explore(client, app_id, "消費者物価指数", STATS_CODE_CPI,
-                    title_must_have=["全国"])
+            for sid in TABLES_TO_INSPECT:
+                inspect_table(client, app_id, sid)
     except httpx.HTTPError as e:
         print(f"HTTP error: {e}", file=sys.stderr)
         return 1
