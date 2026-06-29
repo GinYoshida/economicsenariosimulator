@@ -55,13 +55,24 @@ def test_run_etl_skips_unconfirmed_and_writes_confirmed():
     assert summary["failed"] == []
 
 
-def test_run_etl_uses_default_dispatchers_for_estat_skip():
+def test_run_etl_classifies_value_error_as_skip_and_other_as_failed():
     con = duckdb.connect(":memory:")
-    # No dispatchers override -> default estat dispatcher runs, raises ValueError
-    # (stats_data_id is None) and is recorded as skipped (loud-but-safe).
-    summary = run_etl(con, app_id="dummy", dispatchers={})
+
+    def raises_value_error(spec, _app_id):
+        raise ValueError("unconfirmed param")
+
+    def raises_runtime(spec, _app_id):
+        raise RuntimeError("network down")
+
+    summary = run_etl(
+        con,
+        dispatchers={"estat": raises_value_error, "futures": raises_runtime},
+    )
     skipped_ids = {sid for sid, _ in summary["skipped"]}
+    failed_ids = {sid for sid, _ in summary["failed"]}
+    # ValueError -> skipped (pending), other exceptions -> failed (loud)
     assert {"household.food.real_yoy", "cpi.food"} <= skipped_ids
+    assert {"fut.wheat", "fut.usdjpy"} <= failed_ids
 
 
 def test_run_etl_cao_provider_writes_series():

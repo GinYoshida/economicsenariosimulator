@@ -45,16 +45,32 @@ def _as_list(node: Any) -> list:
     return [node]
 
 
+def _safe_month_start(year: int, month: int) -> pd.Timestamp | None:
+    """月が 1..12 のときだけ月初 Timestamp を返す（年度行などは None）。"""
+    if not 1 <= month <= 12:
+        return None
+    try:
+        return pd.Timestamp(year=year, month=month, day=1)
+    except (ValueError, OverflowError):
+        return None
+
+
 def _time_code_to_date(code: str, name: str | None) -> pd.Timestamp | None:
-    """時間軸の名前/コードから月初の Timestamp を作る。"""
+    """時間軸の名前/コードから月初の Timestamp を作る。
+
+    年度（例 "2025年度" / コード末尾が月00）など月次でない行は None を返して
+    呼び出し側でスキップさせる（CPI 表は月次と年度が混在する）。
+    """
     if name:
         m = _NAME_RE.search(name)
         if m:
-            return pd.Timestamp(year=int(m.group(1)), month=int(m.group(2)), day=1)
+            ts = _safe_month_start(int(m.group(1)), int(m.group(2)))
+            if ts is not None:
+                return ts
     if code:
         m = _CODE_RE.match(code)
         if m:
-            return pd.Timestamp(year=int(m.group(1)), month=int(m.group(2)), day=1)
+            return _safe_month_start(int(m.group(1)), int(m.group(2)))
     return None
 
 

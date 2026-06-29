@@ -47,6 +47,25 @@ def test_parse_values_and_missing_token_becomes_nan():
     assert math.isnan(df.loc["2024-05-01"])
 
 
+def test_parse_skips_annual_fiscal_year_rows():
+    # CPI tables mix monthly rows with fiscal-year ("年度", month code 00) rows.
+    # Annual rows must be skipped, not crash the parser.
+    payload = _payload()
+    stat = payload["GET_STATS_DATA"]["STATISTICAL_DATA"]
+    for obj in stat["CLASS_INF"]["CLASS_OBJ"]:
+        if obj["@id"] == "time":
+            obj["CLASS"].append(
+                {"@code": "2024100000", "@name": "2024年度", "@level": "1"}
+            )
+    stat["DATA_INF"]["VALUE"].append(
+        {"@tab": "01", "@cat01": "010", "@time": "2024100000", "@unit": "円", "$": "987654"}
+    )
+    df = parse_estat_response(payload)
+    # still only the 6 monthly rows; the 年度 row is dropped
+    assert len(df) == 6
+    assert pd.Timestamp("2024-01-01") in set(df["date"])
+
+
 def test_parse_handles_single_value_object():
     # e-Stat returns a bare object (not a list) when only one cell is returned.
     payload = _payload()

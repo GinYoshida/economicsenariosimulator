@@ -54,7 +54,14 @@ _SPECS: list[SourceSpec] = [
         frequency="monthly",
         fetch={
             "search_word": "家計調査 二人以上の世帯 月次",
-            "stats_data_id": None,  # M1-3 で確定
+            # 家計調査 家計収支編 二人以上の世帯 用途分類（総数）月次（名目・金額）。
+            "stats_data_id": "0002070001",
+            "extra_params": {
+                "cdCat01": "060",     # 食料
+                "cdCat02": "03",      # 二人以上の世帯（2000年～）
+                "cdArea": "00000",    # 全国
+                "cdTab": "01",        # 金額
+            },
         },
     ),
     _spec(
@@ -67,7 +74,13 @@ _SPECS: list[SourceSpec] = [
         frequency="monthly",
         fetch={
             "search_word": "家計調査 二人以上の世帯 月次",
-            "stats_data_id": None,  # M1-3 で確定
+            "stats_data_id": "0002070001",
+            "extra_params": {
+                "cdCat01": "122",     # 被服及び履物
+                "cdCat02": "03",      # 二人以上の世帯（2000年～）
+                "cdArea": "00000",    # 全国
+                "cdTab": "01",        # 金額
+            },
         },
     ),
     # --- e-Stat: 消費者物価指数 ---
@@ -81,7 +94,13 @@ _SPECS: list[SourceSpec] = [
         frequency="monthly",
         fetch={
             "search_word": "消費者物価指数 食料",
-            "stats_data_id": None,  # M1-3 で確定
+            # 2020年基準消費者物価指数（全国・指数）。
+            "stats_data_id": "0003427113",
+            "extra_params": {
+                "cdCat01": "0002",    # 食料
+                "cdArea": "00000",    # 全国
+                "cdTab": "1",         # 指数
+            },
         },
     ),
     _spec(
@@ -94,7 +113,12 @@ _SPECS: list[SourceSpec] = [
         frequency="monthly",
         fetch={
             "search_word": "消費者物価指数 被服及び履物",
-            "stats_data_id": None,  # M1-3 で確定
+            "stats_data_id": "0003427113",
+            "extra_params": {
+                "cdCat01": "0082",    # 被服及び履物
+                "cdArea": "00000",    # 全国
+                "cdTab": "1",         # 指数
+            },
         },
     ),
     # --- BOJ: 金利・為替 ---
