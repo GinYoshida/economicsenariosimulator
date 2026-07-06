@@ -2,23 +2,23 @@
   "metrics": [
     {
       "category": "food",
-      "mae": 0.019344236338750098,
-      "rmse": 0.02272910660305086,
-      "direction_hit": 0.6,
-      "naive_mae": 0.015370876103096464,
-      "naive_rmse": 0.01955716202809943,
-      "naive_direction_hit": 0.6,
+      "mae": 0.016523972752478903,
+      "rmse": 0.02101558921397379,
+      "direction_hit": 0.6942446043165468,
+      "naive_mae": 0.016423274013329485,
+      "naive_rmse": 0.021184995383014826,
+      "naive_direction_hit": 0.7517985611510791,
       "beats_naive": false
     },
     {
       "category": "clothing",
-      "mae": 0.03472520746882453,
-      "rmse": 0.044747336532560876,
-      "direction_hit": 0.3,
-      "naive_mae": 0.03310775791446761,
-      "naive_rmse": 0.0375085217377609,
-      "naive_direction_hit": 0.3,
-      "beats_naive": false
+      "mae": 0.07028697888517582,
+      "rmse": 0.10559260885984632,
+      "direction_hit": 0.5,
+      "naive_mae": 0.08617893183447757,
+      "naive_rmse": 0.13531409171214287,
+      "naive_direction_hit": 0.6115107913669064,
+      "beats_naive": true
     }
   ],
   "window": "expanding, horizon=3, min_train=24"
