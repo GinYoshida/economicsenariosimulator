@@ -14,6 +14,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Callable
 
+import numpy as np
 import pandas as pd
 
 from etl.provenance import Source
@@ -22,24 +23,37 @@ _CLOSE_CANDIDATES = ("Close", "Adj Close", "close", "adjclose")
 
 
 def _close_series(daily: pd.DataFrame) -> pd.Series:
-    """日次 DataFrame から終値 Series を取り出す（列名の揺れに対応）。"""
-    for col in _CLOSE_CANDIDATES:
-        if col in daily.columns:
-            return daily[col]
-    # yfinance の MultiIndex 列（('Close','ZW=F')）に対応。
-    if isinstance(daily.columns, pd.MultiIndex):
+    """日次 DataFrame から終値を 1 次元 Series で取り出す（列名の揺れに対応）。
+
+    新しめの yfinance は単一銘柄でも MultiIndex 列（('Close','ZW=F')）を返す。
+    ``daily["Close"]`` が 1 列 DataFrame になり得るため、常に Series に落とす。
+    """
+    columns = daily.columns
+    picked: Any = None
+    if isinstance(columns, pd.MultiIndex):
+        level0 = columns.get_level_values(0)
         for col in _CLOSE_CANDIDATES:
-            if col in daily.columns.get_level_values(0):
-                sub = daily[col]
-                return sub.iloc[:, 0] if isinstance(sub, pd.DataFrame) else sub
-    raise ValueError(f"No close column found in columns: {list(daily.columns)}")
+            if col in level0:
+                picked = daily.xs(col, axis=1, level=0)
+                break
+    else:
+        for col in _CLOSE_CANDIDATES:
+            if col in columns:
+                picked = daily[col]
+                break
+    if picked is None:
+        raise ValueError(f"No close column found in columns: {list(columns)}")
+    if isinstance(picked, pd.DataFrame):
+        picked = picked.iloc[:, 0]  # 1 列 DataFrame -> Series
+    return picked
 
 
 def aggregate_monthly_close(daily: pd.DataFrame) -> pd.DataFrame:
     """日次 OHLC から月次終値（月初日付）の ``date``/``value`` 表を作る。"""
-    close = _close_series(daily).astype(float)
-    index = pd.to_datetime(close.index)
-    close = pd.Series(close.to_numpy(), index=index).sort_index()
+    series = _close_series(daily)
+    values = np.asarray(series, dtype=float).reshape(-1)  # (n,1) でも 1 次元化
+    index = pd.to_datetime(pd.Index(series.index))
+    close = pd.Series(values, index=index).sort_index()
     monthly = close.resample("MS").last().dropna()
     df = pd.DataFrame({"date": monthly.index, "value": monthly.to_numpy()})
     df["date"] = pd.to_datetime(df["date"])

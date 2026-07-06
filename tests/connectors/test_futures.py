@@ -36,6 +36,27 @@ def test_aggregate_sorted_and_float():
     assert pd.api.types.is_float_dtype(df["value"])
 
 
+def test_aggregate_handles_multiindex_columns():
+    # Newer yfinance returns MultiIndex columns even for a single ticker,
+    # which made daily["Close"] a 1-column DataFrame (shape (n,1)) and crashed.
+    daily = _daily()
+    daily.columns = pd.MultiIndex.from_product([daily.columns, ["ZW=F"]])
+    df = aggregate_monthly_close(daily)
+    assert list(df.columns) == ["date", "value"]
+    assert len(df) == 3
+    assert pd.api.types.is_float_dtype(df["value"])
+    s = df.set_index("date")["value"]
+    assert s.loc["2024-01-01"] == pytest.approx(598.50)
+
+
+def test_aggregate_handles_2d_close_values():
+    # Defensive: a plain (n,1) close block must still collapse to 1-D.
+    daily = _daily()[["Close"]].copy()
+    df = aggregate_monthly_close(daily)
+    assert len(df) == 3
+    assert df.set_index("date")["value"].loc["2024-03-01"] == pytest.approx(624.50)
+
+
 def test_fetch_futures_uses_downloader_and_builds_source():
     captured = {}
 
