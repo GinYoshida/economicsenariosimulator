@@ -2,22 +2,22 @@
   "metrics": [
     {
       "category": "food",
-      "mae": 0.016523972752478903,
-      "rmse": 0.02101558921397379,
-      "direction_hit": 0.6942446043165468,
-      "naive_mae": 0.016423274013329485,
-      "naive_rmse": 0.021184995383014826,
-      "naive_direction_hit": 0.7517985611510791,
+      "mae": 0.01700731841652583,
+      "rmse": 0.02137590008754104,
+      "direction_hit": 0.7089552238805971,
+      "naive_mae": 0.016736000497503612,
+      "naive_rmse": 0.021494566299628818,
+      "naive_direction_hit": 0.7425373134328358,
       "beats_naive": false
     },
     {
       "category": "clothing",
-      "mae": 0.07028697888517582,
-      "rmse": 0.10559260885984632,
+      "mae": 0.07074341659442868,
+      "rmse": 0.10615467541563264,
       "direction_hit": 0.5,
-      "naive_mae": 0.08617893183447757,
-      "naive_rmse": 0.13531409171214287,
-      "naive_direction_hit": 0.6115107913669064,
+      "naive_mae": 0.08642035406131936,
+      "naive_rmse": 0.1357156719584184,
+      "naive_direction_hit": 0.6086956521739131,
       "beats_naive": true
     }
   ],
