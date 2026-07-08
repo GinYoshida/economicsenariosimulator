@@ -3,7 +3,7 @@
     "series_id": "cpi.clothing",
     "name": "総務省 消費者物価指数",
     "url": "https://www.stat.go.jp/data/cpi/",
-    "retrieved_at": "2026-07-08T13:17:33.474761+00:00",
+    "retrieved_at": "2026-07-08T13:41:11.308000+00:00",
     "license": "政府統計（出典明示で利用可）",
     "unit": "index",
     "frequency": "monthly"
@@ -12,7 +12,7 @@
     "series_id": "cpi.food",
     "name": "総務省 消費者物価指数",
     "url": "https://www.stat.go.jp/data/cpi/",
-    "retrieved_at": "2026-07-08T13:17:32.207958+00:00",
+    "retrieved_at": "2026-07-08T13:41:10.025077+00:00",
     "license": "政府統計（出典明示で利用可）",
     "unit": "index",
     "frequency": "monthly"
@@ -21,7 +21,7 @@
     "series_id": "fut.cotton",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-08T13:17:35.362621+00:00",
+    "retrieved_at": "2026-07-08T13:41:13.087946+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "usd",
     "frequency": "monthly"
@@ -30,7 +30,7 @@
     "series_id": "fut.soybean",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-08T13:17:34.895807+00:00",
+    "retrieved_at": "2026-07-08T13:41:12.622386+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "usd",
     "frequency": "monthly"
@@ -39,7 +39,7 @@
     "series_id": "fut.sugar",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-08T13:17:35.134937+00:00",
+    "retrieved_at": "2026-07-08T13:41:12.840662+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "usd",
     "frequency": "monthly"
@@ -48,7 +48,7 @@
     "series_id": "fut.usdjpy",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-08T13:17:35.621559+00:00",
+    "retrieved_at": "2026-07-08T13:41:13.435747+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "jpy_per_usd",
     "frequency": "monthly"
@@ -57,7 +57,7 @@
     "series_id": "fut.wheat",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-08T13:17:34.634374+00:00",
+    "retrieved_at": "2026-07-08T13:41:12.387000+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "usd",
     "frequency": "monthly"
@@ -66,7 +66,7 @@
     "series_id": "household.clothing.real_yoy",
     "name": "総務省 家計調査",
     "url": "https://www.stat.go.jp/data/kakei/sokuhou/tsuki/index.html",
-    "retrieved_at": "2026-07-08T13:17:31.033577+00:00",
+    "retrieved_at": "2026-07-08T13:41:08.871272+00:00",
     "license": "政府統計（出典明示で利用可）",
     "unit": "yoy_pct",
     "frequency": "monthly"
@@ -75,7 +75,7 @@
     "series_id": "household.food.real_yoy",
     "name": "総務省 家計調査",
     "url": "https://www.stat.go.jp/data/kakei/sokuhou/tsuki/index.html",
-    "retrieved_at": "2026-07-08T13:17:30.025067+00:00",
+    "retrieved_at": "2026-07-08T13:41:07.761242+00:00",
     "license": "政府統計（出典明示で利用可）",
     "unit": "yoy_pct",
     "frequency": "monthly"
