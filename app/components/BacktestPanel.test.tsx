@@ -31,12 +31,39 @@ const backtest: Backtest = {
 };
 
 describe("BacktestPanel", () => {
-  it("shows the naive-gate verdict per category", () => {
+  it("passes food (beats naive + directional skill) and flags clothing", () => {
     render(<BacktestPanel backtest={backtest} />);
-    const food = screen.getByTestId("bt-food");
-    expect(within(food).getByText("ナイーブ超え")).toBeInTheDocument();
-    const clothing = screen.getByTestId("bt-clothing");
-    expect(within(clothing).getByText("ナイーブ未達")).toBeInTheDocument();
+    // food: beats_naive + direction 0.66 -> 合格
+    expect(within(screen.getByTestId("bt-food")).getByText("合格")).toBeInTheDocument();
+    // clothing: does not beat naive -> 要改善
+    expect(
+      within(screen.getByTestId("bt-clothing")).getByText("要改善"),
+    ).toBeInTheDocument();
     expect(screen.getByText(/expanding, horizon=3/)).toBeInTheDocument();
+  });
+
+  it("flags a MAE-only win without directional skill as 要改善", () => {
+    const maeOnly: Backtest = {
+      window: "w",
+      metrics: [
+        {
+          category: "clothing",
+          mae: 0.071,
+          rmse: 0.09,
+          medae: 0.05,
+          direction_hit: 0.498, // no directional skill
+          naive_mae: 0.086,
+          naive_rmse: 0.1,
+          naive_medae: 0.06,
+          naive_direction_hit: 0.5,
+          beats_naive: true, // MAE wins...
+          passes_gate: false, // ...but the gate rejects it
+        },
+      ],
+    };
+    render(<BacktestPanel backtest={maeOnly} />);
+    expect(
+      within(screen.getByTestId("bt-clothing")).getByText("要改善"),
+    ).toBeInTheDocument();
   });
 });

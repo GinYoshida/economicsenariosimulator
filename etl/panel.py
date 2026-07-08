@@ -31,19 +31,41 @@ DEFAULT_YOY_SERIES: set[str] = {
 }
 
 
+# ノイズの大きい目的変数（家計調査の名目YoY）に平滑・ハズレ値処理を適用する。
+# 衣料は月次変動が激しく、単月で±数十%の前年比になり得るため。
+DENOISE_TARGETS: set[str] = {
+    "household.food.real_yoy",
+    "household.clothing.real_yoy",
+}
+
+
 def to_yoy(s: pd.Series) -> pd.Series:
     """前年同月比（比率）。先頭 12 か月は NaN。"""
     return s / s.shift(12) - 1.0
+
+
+def denoise(s: pd.Series, *, winsor_q: float = 0.01, window: int = 3) -> pd.Series:
+    """上下 ``winsor_q`` をクリップ（ウィンズライズ）し ``window`` か月移動平均で平滑。"""
+    lo = s.quantile(winsor_q)
+    hi = s.quantile(1.0 - winsor_q)
+    clipped = s.clip(lower=lo, upper=hi)
+    return clipped.rolling(window, min_periods=1).mean()
 
 
 def build_panel(
     con: duckdb.DuckDBPyConnection,
     *,
     yoy_series: set[str] | None = None,
+    denoise_targets: set[str] | None = None,
 ) -> pd.DataFrame:
-    """全系列を月次ワイド表に束ね、指定系列を YoY 変換して返す。"""
+    """全系列を月次ワイド表に束ね、指定系列を YoY 変換して返す。
+
+    ``denoise_targets`` の系列は YoY 後にウィンズライズ＋移動平均でノイズを抑える。
+    """
     if yoy_series is None:
         yoy_series = DEFAULT_YOY_SERIES
+    if denoise_targets is None:
+        denoise_targets = DENOISE_TARGETS
 
     series_ids = list_series(con)
     columns: dict[str, pd.Series] = {}
@@ -70,6 +92,8 @@ def build_panel(
         col = s.reindex(index)  # 外部結合: 端の未公表月は NaN（前方補完なし）
         if sid in yoy_series:
             col = to_yoy(col)
+        if sid in denoise_targets:
+            col = denoise(col)
         panel[sid] = col
 
     return panel

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Backtest, Coefficients } from "@/app/lib/artifacts";
+import { metricPasses, type Backtest, type Coefficients } from "@/app/lib/artifacts";
 
 const CATEGORY_LABEL: Record<string, string> = { food: "食料", clothing: "衣料" };
 
@@ -73,11 +73,15 @@ export default function ModelExplanation({
 
             {m && (
               <p className="mt-2 text-xs text-gray-600">
-                バックテスト: MAE {m.mae.toFixed(3)}（ナイーブ {m.naive_mae.toFixed(3)}）,
-                方向一致 {pct(m.direction_hit)},{" "}
-                <span className={m.beats_naive ? "text-green-600" : "text-gray-500"}>
-                  {m.beats_naive ? "ナイーブ超え" : "ナイーブ未達"}
+                バックテスト: MAE {m.mae.toFixed(3)}（ナイーブ {m.naive_mae.toFixed(3)}）
+                {m.medae != null ? `, 中央誤差 ${m.medae.toFixed(3)}` : ""}, 方向一致{" "}
+                {pct(m.direction_hit)},{" "}
+                <span className={metricPasses(m) ? "text-green-600" : "text-amber-600"}>
+                  {metricPasses(m) ? "合格" : "要改善"}
                 </span>
+                {m.beats_naive && !metricPasses(m)
+                  ? "（MAEは超えるが方向一致が五分未満）"
+                  : ""}
               </p>
             )}
           </div>

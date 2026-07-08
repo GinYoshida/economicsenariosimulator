@@ -44,12 +44,20 @@ export type BacktestMetric = {
   category: string;
   mae: number;
   rmse: number;
+  medae?: number; // 中央絶対誤差（旧成果物では欠落）
   direction_hit: number;
   naive_mae: number;
   naive_rmse: number;
+  naive_medae?: number;
   naive_direction_hit: number;
   beats_naive: boolean;
+  passes_gate?: boolean; // beats_naive かつ 方向一致>50%（旧成果物では欠落）
 };
+
+/** 実質的な合格判定（passes_gate が無い旧データは beats_naive で近似）。 */
+export function metricPasses(m: BacktestMetric): boolean {
+  return m.passes_gate ?? (m.beats_naive && m.direction_hit > 0.5);
+}
 
 export type BacktestPoint = {
   category: string;

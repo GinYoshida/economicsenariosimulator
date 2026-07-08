@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from etl.panel import build_panel, to_yoy
+from etl.panel import build_panel, denoise, to_yoy
 from etl.provenance import Source
 from etl.store import init_db, write_series
 
@@ -38,6 +38,36 @@ def test_to_yoy_formula_and_leading_nan():
     # yoy = s/s.shift(12) - 1
     assert yoy.iloc[12] == pytest.approx(13 / 1 - 1)
     assert yoy.iloc[23] == pytest.approx(24 / 12 - 1)
+
+
+# ---- denoise ----
+
+def test_denoise_clips_outliers_and_smooths():
+    idx = pd.date_range("2020-01-01", periods=100, freq="MS")
+    vals = np.zeros(100)
+    vals[50] = 100.0  # extreme spike
+    s = pd.Series(vals, index=idx)
+    out = denoise(s, winsor_q=0.01, window=3)
+    # the spike is winsorized then averaged -> nowhere near 100
+    assert out.max() < 5.0
+    assert len(out) == 100
+
+
+def test_build_panel_denoises_household_targets():
+    con = duckdb.connect(":memory:")
+    init_db(con)
+    n = 40
+    vals = list(np.linspace(100, 140, n))
+    vals[30] = 5000.0  # spike -> would create a huge YoY outlier
+    write_series(
+        con, "household.food.real_yoy", _series("2020-01-01", n, vals),
+        _src("household.food.real_yoy"),
+    )
+    raw = build_panel(con, denoise_targets=set())["household.food.real_yoy"].dropna()
+    den = build_panel(con)["household.food.real_yoy"].dropna()
+    # denoising cuts the outlier peak and reduces variance
+    assert den.abs().max() < raw.abs().max()
+    assert den.std() < raw.std()
 
 
 # ---- build_panel ----

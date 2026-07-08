@@ -39,6 +39,14 @@ def direction_hit(y_true, y_pred) -> float:
     return float(np.mean(np.sign(a) == np.sign(b)))
 
 
+def medae(y_true, y_pred) -> float:
+    """中央絶対誤差（ハズレ値に頑健な当てはまり指標）。"""
+    a, b = _valid_pairs(y_true, y_pred)
+    if len(a) == 0:
+        return float("nan")
+    return float(np.median(np.abs(a - b)))
+
+
 def naive_persistence(y: pd.Series) -> pd.Series:
     """直前値を予測とするナイーブ系列（先頭は NaN）。"""
     return y.shift(1)
@@ -112,18 +120,27 @@ def run_backtest(
         )
 
     actuals_arr = np.asarray(actuals)
-    model_mae = mae(actuals_arr, np.asarray(preds))
-    naive_mae = mae(actuals_arr, np.asarray(naive))
+    preds_arr = np.asarray(preds)
+    naive_arr = np.asarray(naive)
+    model_mae = mae(actuals_arr, preds_arr)
+    naive_mae = mae(actuals_arr, naive_arr)
+    dir_hit = direction_hit(actuals_arr, preds_arr)
+    beats = bool(model_mae < naive_mae)
+    # 実質的な合格基準: MAE でナイーブを上回り、かつ方向当たりが五分を超える。
+    passes = bool(beats and (dir_hit == dir_hit) and dir_hit > 0.5)
 
     metric = BacktestMetric(
         category=category,
         mae=model_mae,
-        rmse=rmse(actuals_arr, np.asarray(preds)),
-        direction_hit=direction_hit(actuals_arr, np.asarray(preds)),
+        rmse=rmse(actuals_arr, preds_arr),
+        medae=medae(actuals_arr, preds_arr),
+        direction_hit=dir_hit,
         naive_mae=naive_mae,
-        naive_rmse=rmse(actuals_arr, np.asarray(naive)),
-        naive_direction_hit=direction_hit(actuals_arr, np.asarray(naive)),
-        beats_naive=bool(model_mae < naive_mae),
+        naive_rmse=rmse(actuals_arr, naive_arr),
+        naive_medae=medae(actuals_arr, naive_arr),
+        naive_direction_hit=direction_hit(actuals_arr, naive_arr),
+        beats_naive=beats,
+        passes_gate=passes,
     )
     if return_points:
         return metric, points

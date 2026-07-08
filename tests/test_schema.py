@@ -100,17 +100,21 @@ def test_backtest_roundtrip():
                 "category": "food",
                 "mae": 0.5,
                 "rmse": 0.7,
+                "medae": 0.4,
                 "direction_hit": 0.66,
                 "naive_mae": 0.8,
                 "naive_rmse": 1.0,
+                "naive_medae": 0.75,
                 "naive_direction_hit": 0.5,
                 "beats_naive": True,
+                "passes_gate": True,
             }
         ],
         "window": "expanding, horizon=3",
     }
     model = Backtest(**data)
     assert model.metrics[0].beats_naive is True
+    assert model.metrics[0].passes_gate is True
     reparsed = Backtest(**json.loads(model.model_dump_json()))
     assert reparsed == model
 

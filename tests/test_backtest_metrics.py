@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from models.backtest import direction_hit, mae, naive_persistence, rmse
+from models.backtest import direction_hit, mae, medae, naive_persistence, rmse
 
 
 def test_mae_and_rmse_known_values():
@@ -12,6 +12,14 @@ def test_mae_and_rmse_known_values():
     assert rmse(y_true, y_pred) == pytest.approx(
         np.sqrt((0.25 + 1.0 + 0.0) / 3)
     )
+
+
+def test_medae_is_robust_to_outliers():
+    y_true = np.array([1.0, 2.0, 3.0, 100.0])
+    y_pred = np.array([1.0, 2.0, 3.0, 0.0])  # one huge error
+    # median absolute error ignores the outlier; MAE does not
+    assert medae(y_true, y_pred) == 0.0
+    assert mae(y_true, y_pred) > 0.0
 
 
 def test_direction_hit_sign_agreement():

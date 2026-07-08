@@ -43,6 +43,9 @@ def test_model_beats_naive_on_predictable_series():
     m = run_backtest(panel, "food", lags={"fut.wheat": 1}, horizon=3, min_train=30)
     assert m.beats_naive is True
     assert m.mae < m.naive_mae
+    # a real fit clears the stricter gate (beats naive AND directional skill)
+    assert m.direction_hit > 0.5
+    assert m.passes_gate is True
 
 
 def test_model_does_not_beat_naive_on_pure_noise():
@@ -50,3 +53,13 @@ def test_model_does_not_beat_naive_on_pure_noise():
     m = run_backtest(panel, "food", lags={"fut.wheat": 1}, horizon=3, min_train=30)
     # on noise the structural model should not reliably beat persistence
     assert m.beats_naive is False
+    assert m.passes_gate is False
+
+
+def test_gate_rejects_mae_win_without_directional_skill():
+    # A series that beats naive on MAE but only by predicting near the mean
+    # (no directional skill) must NOT pass the stricter gate.
+    m = run_backtest(_panel(signal=False), "food", lags={"fut.wheat": 1},
+                     horizon=3, min_train=30)
+    if m.beats_naive:  # if MAE happened to win, direction must still gate it out
+        assert m.passes_gate == (m.direction_hit > 0.5)

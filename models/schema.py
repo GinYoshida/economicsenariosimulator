@@ -50,11 +50,14 @@ class BacktestMetric(BaseModel):
     category: str
     mae: float
     rmse: float
+    medae: float          # 中央絶対誤差（ハズレ値に頑健）
     direction_hit: float
     naive_mae: float
     naive_rmse: float
+    naive_medae: float
     naive_direction_hit: float
-    beats_naive: bool
+    beats_naive: bool     # mae < naive_mae（MAE 単独）
+    passes_gate: bool     # beats_naive かつ 方向一致>50%（合格の実質基準）
 
 
 class BacktestPoint(BaseModel):
