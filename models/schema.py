@@ -57,6 +57,35 @@ class BacktestMetric(BaseModel):
     beats_naive: bool
 
 
+class BacktestPoint(BaseModel):
+    category: str
+    date: str          # 予測対象月（ISO）
+    actual: float      # 実績 YoY
+    predicted: float   # OOS 予測 YoY
+
+
 class Backtest(BaseModel):
     metrics: list[BacktestMetric]
     window: str
+    predictions: list[BacktestPoint] = []  # 実績×予測の散布図用
+
+
+class SeriesPoint(BaseModel):
+    date: str
+    value: float | None    # 欠測は null
+
+
+class SeriesData(BaseModel):
+    series_id: str
+    name: str              # 出典名
+    url: str
+    unit: str
+    frequency: str
+    points: list[SeriesPoint]
+
+
+class SeriesFile(BaseModel):
+    """series.json（入力系列の実績）のルート。"""
+
+    generated_at: str
+    series: list[SeriesData]

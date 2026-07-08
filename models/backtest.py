@@ -51,12 +51,16 @@ def run_backtest(
     lags: dict[str, int],
     horizon: int = 3,
     min_train: int = 24,
-) -> "BacktestMetric":
+    return_points: bool = False,
+):
     """拡張窓 OOS バックテスト。各原点で学習→horizon先を予測し指標を集計。
 
     予測は実現したドライバー（外生入力）を条件とする条件付き評価。
     ナイーブは persistence（原点の実測値を horizon 先の予測とする）。
     ``beats_naive = mae < naive_mae``。
+
+    ``return_points=True`` のとき ``(BacktestMetric, points)`` を返す。
+    ``points`` は ``{"date","actual","predicted"}`` の list（実績×予測の散布図用）。
     """
     from models.features import TARGET_BY_CATEGORY, build_design, make_features
     from models.ols import fit_ols, predict
@@ -69,6 +73,7 @@ def run_backtest(
     preds: list[float] = []
     actuals: list[float] = []
     naive: list[float] = []
+    points: list[dict] = []
 
     for i in range(min_train, len(dates) - horizon):
         origin = dates[i]
@@ -94,15 +99,23 @@ def run_backtest(
         if xrow.isna().any(axis=1).iloc[0]:
             continue
 
-        preds.append(float(predict(fit, xrow)[0]))
+        yhat = float(predict(fit, xrow)[0])
+        preds.append(yhat)
         actuals.append(float(actual))
         naive.append(float(origin_value))
+        points.append(
+            {
+                "date": pd.Timestamp(target_date).date().isoformat(),
+                "actual": float(actual),
+                "predicted": yhat,
+            }
+        )
 
     actuals_arr = np.asarray(actuals)
     model_mae = mae(actuals_arr, np.asarray(preds))
     naive_mae = mae(actuals_arr, np.asarray(naive))
 
-    return BacktestMetric(
+    metric = BacktestMetric(
         category=category,
         mae=model_mae,
         rmse=rmse(actuals_arr, np.asarray(preds)),
@@ -112,3 +125,6 @@ def run_backtest(
         naive_direction_hit=direction_hit(actuals_arr, np.asarray(naive)),
         beats_naive=bool(model_mae < naive_mae),
     )
+    if return_points:
+        return metric, points
+    return metric

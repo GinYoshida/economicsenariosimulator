@@ -6,11 +6,15 @@ from pydantic import ValidationError
 from models.schema import (
     Backtest,
     BacktestMetric,
+    BacktestPoint,
     Baseline,
     BaselinePoint,
     CategoryModel,
     Coefficients,
     DriverCoef,
+    SeriesData,
+    SeriesFile,
+    SeriesPoint,
 )
 
 
@@ -108,6 +112,50 @@ def test_backtest_roundtrip():
     model = Backtest(**data)
     assert model.metrics[0].beats_naive is True
     reparsed = Backtest(**json.loads(model.model_dump_json()))
+    assert reparsed == model
+
+
+def test_backtest_predictions_roundtrip():
+    data = {
+        "metrics": [],
+        "window": "expanding",
+        "predictions": [
+            {"category": "food", "date": "2024-03-01", "actual": 1.2, "predicted": 0.9},
+        ],
+    }
+    model = Backtest(**data)
+    assert isinstance(model.predictions[0], BacktestPoint)
+    reparsed = Backtest(**json.loads(model.model_dump_json()))
+    assert reparsed == model
+
+
+def test_backtest_predictions_default_empty():
+    model = Backtest(metrics=[], window="w")
+    assert model.predictions == []
+
+
+def test_series_file_roundtrip_with_null_value():
+    data = {
+        "generated_at": "2026-06-22T00:00:00Z",
+        "series": [
+            {
+                "series_id": "cpi.food",
+                "name": "総務省 消費者物価指数",
+                "url": "https://www.stat.go.jp/data/cpi/",
+                "unit": "index",
+                "frequency": "monthly",
+                "points": [
+                    {"date": "2024-01-01", "value": 105.3},
+                    {"date": "2024-02-01", "value": None},
+                ],
+            }
+        ],
+    }
+    model = SeriesFile(**data)
+    assert isinstance(model.series[0], SeriesData)
+    assert isinstance(model.series[0].points[0], SeriesPoint)
+    assert model.series[0].points[1].value is None
+    reparsed = SeriesFile(**json.loads(model.model_dump_json()))
     assert reparsed == model
 
 

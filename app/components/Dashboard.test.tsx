@@ -6,6 +6,7 @@ import type {
   Backtest,
   Baseline,
   Coefficients,
+  SeriesFile,
   SourceMeta,
 } from "@/app/lib/artifacts";
 
@@ -14,62 +15,93 @@ import baseline from "@/public/data/baseline.json";
 import backtest from "@/public/data/backtest.json";
 import sources from "@/public/data/sources.json";
 
-function renderDashboard() {
+const seriesFile: SeriesFile = {
+  generated_at: "2026-06-22T00:00:00Z",
+  series: [
+    {
+      series_id: "cpi.food",
+      name: "総務省 消費者物価指数",
+      url: "https://www.stat.go.jp/data/cpi/",
+      unit: "index",
+      frequency: "monthly",
+      points: [
+        { date: "2024-01-01", value: 105.3 },
+        { date: "2024-02-01", value: 105.9 },
+      ],
+    },
+  ],
+};
+
+function renderDashboard(series: SeriesFile | null = null) {
   return render(
     <Dashboard
       coefficients={coefficients as Coefficients}
       baseline={baseline as Baseline}
       backtest={backtest as Backtest}
       sources={sources as SourceMeta[]}
+      series={series}
     />,
   );
 }
 
-describe("Dashboard", () => {
-  it("renders all panels", () => {
+describe("Dashboard tabs", () => {
+  it("shows the scenario tab by default", () => {
     renderDashboard();
+    expect(screen.getByTestId("tab-scenario")).toBeInTheDocument();
     expect(screen.getByTestId("forecast-chart")).toBeInTheDocument();
     expect(screen.getByTestId("driver-sliders")).toBeInTheDocument();
     expect(screen.getByTestId("decomposition-chart")).toBeInTheDocument();
-    expect(screen.getByTestId("backtest-panel")).toBeInTheDocument();
-    expect(screen.getByTestId("source-panel")).toBeInTheDocument();
+    // model/data panels are not mounted until their tab is selected
+    expect(screen.queryByTestId("model-explanation")).toBeNull();
+    expect(screen.queryByTestId("source-tables")).toBeNull();
   });
 
+  it("switches to the model tab and shows explanation + backtest + scatter", () => {
+    renderDashboard();
+    fireEvent.click(screen.getByRole("tab", { name: "モデル解説" }));
+    expect(screen.getByTestId("model-explanation")).toBeInTheDocument();
+    expect(screen.getByTestId("backtest-panel")).toBeInTheDocument();
+    expect(screen.getAllByTestId("fit-scatter").length).toBeGreaterThan(0);
+  });
+
+  it("switches to the data tab and shows source tables + citations", () => {
+    renderDashboard(seriesFile);
+    fireEvent.click(screen.getByRole("tab", { name: "データソース" }));
+    expect(screen.getByTestId("source-tables")).toBeInTheDocument();
+    expect(screen.getByTestId("series-cpi.food")).toBeInTheDocument();
+    expect(screen.getByTestId("source-panel")).toBeInTheDocument();
+  });
+});
+
+describe("Dashboard scenario interactions", () => {
   it("updates the forecast when a driver slider moves", () => {
     renderDashboard();
     const before = screen.getByTestId("food-next").textContent;
-    // pick the first slider and move it
     const sliders = within(screen.getByTestId("driver-sliders")).getAllByRole(
       "slider",
     );
     fireEvent.change(sliders[0], { target: { value: "9" } });
-    const after = screen.getByTestId("food-next").textContent;
-    expect(after).not.toEqual(before);
+    expect(screen.getByTestId("food-next").textContent).not.toEqual(before);
   });
 
   it("switching presets changes driver values", () => {
     renderDashboard();
-    const foodBase = screen.getByTestId("food-next").textContent;
+    const base = screen.getByTestId("food-next").textContent;
     fireEvent.click(screen.getByRole("button", { name: "悲観" }));
-    const foodPessimistic = screen.getByTestId("food-next").textContent;
-    expect(foodPessimistic).not.toEqual(foodBase);
+    expect(screen.getByTestId("food-next").textContent).not.toEqual(base);
   });
 
-  it("forecast data includes history and forecast rows", () => {
+  it("toggling 3-month average adds MA fields to the chart data", () => {
     renderDashboard();
-    const items = within(screen.getByTestId("forecast-data")).getAllByRole(
-      "listitem",
-    );
-    const text = items.map((i) => i.textContent ?? "").join("\n");
-    expect(text).toMatch(/history/);
-    expect(text).toMatch(/forecast/);
+    expect(screen.getByTestId("forecast-data").textContent).not.toMatch(/MA/);
+    fireEvent.click(screen.getByLabelText("3カ月平均を表示"));
+    expect(screen.getByTestId("forecast-data").textContent).toMatch(/MA/);
   });
 
   it("decomposition switches with the active category", () => {
     renderDashboard();
-    const foodDecomp = screen.getByTestId("decomposition-data").textContent;
+    const food = screen.getByTestId("decomposition-data").textContent;
     fireEvent.click(screen.getByRole("button", { name: "衣料" }));
-    const clothingDecomp = screen.getByTestId("decomposition-data").textContent;
-    expect(clothingDecomp).not.toEqual(foodDecomp);
+    expect(screen.getByTestId("decomposition-data").textContent).not.toEqual(food);
   });
 });

@@ -7,10 +7,12 @@ import {
   loadBacktest,
   loadBaseline,
   loadCoefficients,
+  loadSeries,
   loadSources,
   type Backtest,
   type Baseline,
   type Coefficients,
+  type SeriesFile,
   type SourceMeta,
 } from "@/app/lib/artifacts";
 
@@ -19,6 +21,7 @@ type Artifacts = {
   baseline: Baseline;
   backtest: Backtest;
   sources: SourceMeta[];
+  series: SeriesFile | null;
 };
 
 export default function Home() {
@@ -31,9 +34,10 @@ export default function Home() {
       loadBaseline(),
       loadBacktest(),
       loadSources(),
+      loadSeries(),
     ])
-      .then(([coefficients, baseline, backtest, sources]) =>
-        setData({ coefficients, baseline, backtest, sources }),
+      .then(([coefficients, baseline, backtest, sources, series]) =>
+        setData({ coefficients, baseline, backtest, sources, series }),
       )
       .catch((e: unknown) => setError(String(e)));
   }, []);
@@ -64,6 +68,7 @@ export default function Home() {
       baseline={data.baseline}
       backtest={data.backtest}
       sources={data.sources}
+      series={data.series}
     />
   );
 }

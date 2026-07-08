@@ -51,9 +51,17 @@ export type BacktestMetric = {
   beats_naive: boolean;
 };
 
+export type BacktestPoint = {
+  category: string;
+  date: string;
+  actual: number;
+  predicted: number;
+};
+
 export type Backtest = {
   metrics: BacktestMetric[];
   window: string;
+  predictions?: BacktestPoint[]; // 実績×予測（未生成の旧成果物では欠落）
 };
 
 export type SourceMeta = {
@@ -64,6 +72,22 @@ export type SourceMeta = {
   license: string;
   unit: string;
   frequency: string;
+};
+
+export type SeriesPoint = { date: string; value: number | null };
+
+export type SeriesData = {
+  series_id: string;
+  name: string;
+  url: string;
+  unit: string;
+  frequency: string;
+  points: SeriesPoint[];
+};
+
+export type SeriesFile = {
+  generated_at: string;
+  series: SeriesData[];
 };
 
 const BASE = "/data";
@@ -80,6 +104,15 @@ export const loadCoefficients = () => loadJson<Coefficients>("coefficients.json"
 export const loadBaseline = () => loadJson<Baseline>("baseline.json");
 export const loadBacktest = () => loadJson<Backtest>("backtest.json");
 export const loadSources = () => loadJson<SourceMeta[]>("sources.json");
+
+/** series.json をロード。未生成（404）なら null を返す（次回バッチで生成）。 */
+export async function loadSeries(): Promise<SeriesFile | null> {
+  try {
+    return await loadJson<SeriesFile>("series.json");
+  } catch {
+    return null;
+  }
+}
 
 /** 成果物のカテゴリモデルをシナリオエンジンの型へ変換（lag_months -> lagMonths）。 */
 export function toScenarioModel(m: CategoryModel): CategoryCoef {

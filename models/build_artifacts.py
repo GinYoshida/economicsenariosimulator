@@ -27,15 +27,20 @@ from models.ols import FitResult, fit_ols, predict
 from models.backtest import run_backtest
 from models.schema import (
     Backtest,
+    BacktestPoint,
     Baseline,
     BaselinePoint,
     CategoryModel,
     Coefficients,
     DriverCoef,
+    SeriesData,
+    SeriesFile,
+    SeriesPoint,
 )
 
 BACKTEST_HORIZON = 3
 BACKTEST_MIN_TRAIN = 24
+SERIES_TAIL = 120  # series.json に載せる直近月数（約10年）
 
 MODEL_VERSION = "v1"
 FORECAST_MONTHS = 3
@@ -208,25 +213,53 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
         ),
     )
 
-    # --- backtest.json ---
+    # --- backtest.json（指標＋実績×予測ペア） ---
+    metrics = []
+    predictions: list[BacktestPoint] = []
+    for cat in categories:
+        metric, points = run_backtest(
+            panel,
+            cat,
+            lags=fits[cat][1],
+            horizon=BACKTEST_HORIZON,
+            min_train=BACKTEST_MIN_TRAIN,
+            return_points=True,
+        )
+        metrics.append(metric)
+        predictions.extend(
+            BacktestPoint(category=cat, date=p["date"], actual=p["actual"],
+                          predicted=p["predicted"])
+            for p in points
+        )
     backtest = Backtest(
-        metrics=[
-            run_backtest(
-                panel,
-                cat,
-                lags=fits[cat][1],
-                horizon=BACKTEST_HORIZON,
-                min_train=BACKTEST_MIN_TRAIN,
-            )
-            for cat in categories
-        ],
+        metrics=metrics,
         window=f"expanding, horizon={BACKTEST_HORIZON}, min_train={BACKTEST_MIN_TRAIN}",
+        predictions=predictions,
     )
 
-    # --- sources.json ---
+    # --- series.json（入力系列の月次実績。ソース別テーブル・実績グラフ用） ---
+    series_list: list[SeriesData] = []
     sources = []
     for sid in list_series(con):
-        _, src = read_series(con, sid)
+        df, src = read_series(con, sid)
+        tail = df.sort_values("date").tail(SERIES_TAIL)
+        pts = [
+            SeriesPoint(
+                date=pd.Timestamp(row.date).date().isoformat(),
+                value=None if pd.isna(row.value) else float(row.value),
+            )
+            for row in tail.itertuples(index=False)
+        ]
+        series_list.append(
+            SeriesData(
+                series_id=src.series_id,
+                name=src.name,
+                url=str(src.url),
+                unit=src.unit,
+                frequency=src.frequency,
+                points=pts,
+            )
+        )
         sources.append(
             {
                 "series_id": src.series_id,
@@ -238,11 +271,15 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
                 "frequency": src.frequency,
             }
         )
+    series_file = SeriesFile(
+        generated_at=coeffs.generated_at, series=series_list
+    )
 
     paths = {
         "coefficients": out_dir / "coefficients.json",
         "baseline": out_dir / "baseline.json",
         "backtest": out_dir / "backtest.json",
+        "series": out_dir / "series.json",
         "sources": out_dir / "sources.json",
     }
     paths["coefficients"].write_text(
@@ -250,6 +287,7 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
     )
     paths["baseline"].write_text(baseline.model_dump_json(indent=2), encoding="utf-8")
     paths["backtest"].write_text(backtest.model_dump_json(indent=2), encoding="utf-8")
+    paths["series"].write_text(series_file.model_dump_json(indent=2), encoding="utf-8")
     paths["sources"].write_text(
         json.dumps(sources, ensure_ascii=False, indent=2), encoding="utf-8"
     )

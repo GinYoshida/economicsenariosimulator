@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from models.build_artifacts import build_artifacts
-from models.schema import Backtest, Baseline, Coefficients
+from models.schema import Backtest, Baseline, Coefficients, SeriesFile
 from etl.provenance import Source
 from etl.store import init_db, write_series
 
@@ -74,6 +74,16 @@ def test_build_artifacts_writes_valid_schema_files(tmp_path):
     assert bt_path.exists()
     backtest = Backtest(**json.loads(bt_path.read_text(encoding="utf-8")))
     assert {m.category for m in backtest.metrics} == {"food", "clothing"}
+    # predictions (actual vs predicted pairs) are present for the scatter
+    assert backtest.predictions
+    assert {p.category for p in backtest.predictions} <= {"food", "clothing"}
+
+    series_path = tmp_path / "series.json"
+    assert series_path.exists()
+    series_file = SeriesFile(**json.loads(series_path.read_text(encoding="utf-8")))
+    ids = {s.series_id for s in series_file.series}
+    assert "household.food.real_yoy" in ids
+    assert all(s.points for s in series_file.series)
 
 
 def test_sources_json_lists_provenance(tmp_path):

@@ -9,13 +9,17 @@ import DecompositionChart, {
 import DriverSliders, {
   type DriverSliderSpec,
 } from "@/app/components/DriverSliders";
+import FitScatter from "@/app/components/FitScatter";
 import ForecastChart, { type ForecastRow } from "@/app/components/ForecastChart";
+import ModelExplanation from "@/app/components/ModelExplanation";
 import SourcePanel from "@/app/components/SourcePanel";
+import SourceTables from "@/app/components/SourceTables";
 import {
   toScenarioModel,
   type Backtest,
   type Baseline,
   type Coefficients,
+  type SeriesFile,
   type SourceMeta,
 } from "@/app/lib/artifacts";
 import {
@@ -32,6 +36,13 @@ const PRESET_LABELS: Record<Preset, string> = {
   optimistic: "楽観",
   base: "標準",
   pessimistic: "悲観",
+};
+
+type Tab = "scenario" | "model" | "data";
+const TAB_LABELS: Record<Tab, string> = {
+  scenario: "シナリオ",
+  model: "モデル解説",
+  data: "データソース",
 };
 
 const SLIDER_BY_CLASS: Record<
@@ -60,11 +71,13 @@ export default function Dashboard({
   baseline,
   backtest,
   sources,
+  series = null,
 }: {
   coefficients: Coefficients;
   baseline: Baseline;
   backtest: Backtest;
   sources: SourceMeta[];
+  series?: SeriesFile | null;
 }) {
   const categories = coefficients.categories;
   const driverIds = useMemo(
@@ -99,11 +112,11 @@ export default function Dashboard({
   );
   const total = MONTHS + maxLag;
 
+  const [tab, setTab] = useState<Tab>("scenario");
   const [preset, setPreset] = useState<Preset>("base");
-  const [paths, setPaths] = useState(() =>
-    buildPaths(driverIds, total, "base"),
-  );
+  const [paths, setPaths] = useState(() => buildPaths(driverIds, total, "base"));
   const [activeCat, setActiveCat] = useState(categories[0]?.category ?? "food");
+  const [showMA, setShowMA] = useState(false);
 
   function selectPreset(p: Preset) {
     setPreset(p);
@@ -176,56 +189,112 @@ export default function Dashboard({
         </p>
       </header>
 
-      <div role="group" aria-label="プリセット" className="flex gap-2">
-        {(Object.keys(PRESET_LABELS) as Preset[]).map((p) => (
+      <div role="tablist" aria-label="表示切替" className="flex gap-2 border-b border-gray-200">
+        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
           <button
-            key={p}
+            key={t}
+            role="tab"
             type="button"
-            onClick={() => selectPreset(p)}
-            aria-pressed={preset === p}
-            className={`rounded px-3 py-1 text-sm ${
-              preset === p ? "bg-blue-600 text-white" : "bg-gray-100"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm ${
+              tab === t
+                ? "border-blue-600 font-semibold text-blue-700"
+                : "border-transparent text-gray-500"
             }`}
           >
-            {PRESET_LABELS[p]}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>
 
-      <div className="flex gap-4 text-sm" data-testid="next-forecast">
-        <span data-testid="food-next">食料: {pctLabel(foodFc[0] ?? 0)}</span>
-        <span data-testid="clothing-next">
-          衣料: {pctLabel(clothingFc[0] ?? 0)}
-        </span>
-      </div>
+      {tab === "scenario" && (
+        <div className="flex flex-col gap-6" data-testid="tab-scenario">
+          <div role="group" aria-label="プリセット" className="flex gap-2">
+            {(Object.keys(PRESET_LABELS) as Preset[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => selectPreset(p)}
+                aria-pressed={preset === p}
+                className={`rounded px-3 py-1 text-sm ${
+                  preset === p ? "bg-blue-600 text-white" : "bg-gray-100"
+                }`}
+              >
+                {PRESET_LABELS[p]}
+              </button>
+            ))}
+          </div>
 
-      <ForecastChart rows={rows} />
-      <DriverSliders sliders={sliders} onChange={onSlider} />
+          <div className="flex items-center gap-4 text-sm" data-testid="next-forecast">
+            <span data-testid="food-next">食料: {pctLabel(foodFc[0] ?? 0)}</span>
+            <span data-testid="clothing-next">
+              衣料: {pctLabel(clothingFc[0] ?? 0)}
+            </span>
+            <label className="ml-auto flex items-center gap-1 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={showMA}
+                onChange={(e) => setShowMA(e.target.checked)}
+                aria-label="3カ月平均を表示"
+              />
+              3カ月平均
+            </label>
+          </div>
 
-      <div>
-        <div role="group" aria-label="カテゴリ選択" className="mb-2 flex gap-2">
-          {categories.map((c) => (
-            <button
-              key={c.category}
-              type="button"
-              onClick={() => setActiveCat(c.category)}
-              aria-pressed={activeCat === c.category}
-              className={`rounded px-3 py-1 text-sm ${
-                activeCat === c.category ? "bg-gray-800 text-white" : "bg-gray-100"
-              }`}
-            >
-              {c.category === "food" ? "食料" : "衣料"}
-            </button>
-          ))}
+          <ForecastChart rows={rows} showMovingAverage={showMA} />
+          <DriverSliders sliders={sliders} onChange={onSlider} />
+
+          <div>
+            <div role="group" aria-label="カテゴリ選択" className="mb-2 flex gap-2">
+              {categories.map((c) => (
+                <button
+                  key={c.category}
+                  type="button"
+                  onClick={() => setActiveCat(c.category)}
+                  aria-pressed={activeCat === c.category}
+                  className={`rounded px-3 py-1 text-sm ${
+                    activeCat === c.category
+                      ? "bg-gray-800 text-white"
+                      : "bg-gray-100"
+                  }`}
+                >
+                  {c.category === "food" ? "食料" : "衣料"}
+                </button>
+              ))}
+            </div>
+            <p data-testid="narration" className="mt-2 text-sm text-gray-700">
+              {narrate(contributions)}
+            </p>
+            <DecompositionChart contributions={contributions} />
+          </div>
         </div>
-        <p data-testid="narration" className="mt-2 text-sm text-gray-700">
-          {narrate(contributions)}
-        </p>
-        <DecompositionChart contributions={contributions} />
-      </div>
+      )}
 
-      <BacktestPanel backtest={backtest} />
-      <SourcePanel sources={sources} />
+      {tab === "model" && (
+        <div className="flex flex-col gap-6" data-testid="tab-model">
+          <ModelExplanation coefficients={coefficients} backtest={backtest} />
+          <div>
+            <h2 className="mb-2 text-base font-semibold">適合精度（実績×予測）</h2>
+            {categories.map((c) => (
+              <div key={c.category} className="mb-4">
+                <FitScatter
+                  predictions={backtest.predictions ?? []}
+                  category={c.category}
+                />
+              </div>
+            ))}
+          </div>
+          <BacktestPanel backtest={backtest} />
+        </div>
+      )}
+
+      {tab === "data" && (
+        <div className="flex flex-col gap-6" data-testid="tab-data">
+          <SourceTables file={series} />
+          <SourcePanel sources={sources} />
+        </div>
+      )}
     </main>
   );
 }

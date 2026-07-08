@@ -3,6 +3,7 @@ import {
   loadBacktest,
   loadBaseline,
   loadCoefficients,
+  loadSeries,
   loadSources,
   toScenarioModel,
   type Backtest,
@@ -100,5 +101,17 @@ describe("loaders fetch and parse JSON", () => {
   it("throws on a non-ok response", async () => {
     stubFetch({}, false, 404);
     await expect(loadCoefficients()).rejects.toThrow(/Failed to load/);
+  });
+
+  it("loadSeries returns null when series.json is absent (404)", async () => {
+    stubFetch({}, false, 404);
+    await expect(loadSeries()).resolves.toBeNull();
+  });
+
+  it("loadSeries returns the parsed file when present", async () => {
+    const payload = { generated_at: "2026-06-22T00:00:00Z", series: [] };
+    stubFetch(payload);
+    await expect(loadSeries()).resolves.toEqual(payload);
+    expect(fetch).toHaveBeenCalledWith("/data/series.json");
   });
 });
