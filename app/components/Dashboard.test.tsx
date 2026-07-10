@@ -45,23 +45,24 @@ function renderDashboard(series: SeriesFile | null = null) {
 }
 
 describe("Dashboard tabs", () => {
-  it("shows the scenario tab by default", () => {
+  it("shows the scenario tab (with fit scatter at the bottom) by default", () => {
     renderDashboard();
     expect(screen.getByTestId("tab-scenario")).toBeInTheDocument();
     expect(screen.getByTestId("forecast-chart")).toBeInTheDocument();
     expect(screen.getByTestId("driver-sliders")).toBeInTheDocument();
     expect(screen.getByTestId("decomposition-chart")).toBeInTheDocument();
+    expect(screen.getByTestId("fit-scatter")).toBeInTheDocument(); // moved here
     // model/data panels are not mounted until their tab is selected
     expect(screen.queryByTestId("model-explanation")).toBeNull();
     expect(screen.queryByTestId("source-tables")).toBeNull();
   });
 
-  it("switches to the model tab and shows explanation + backtest + scatter", () => {
+  it("switches to the model tab and shows explanation + backtest (no scatter)", () => {
     renderDashboard();
     fireEvent.click(screen.getByRole("tab", { name: "モデル解説" }));
     expect(screen.getByTestId("model-explanation")).toBeInTheDocument();
     expect(screen.getByTestId("backtest-panel")).toBeInTheDocument();
-    expect(screen.getAllByTestId("fit-scatter").length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("fit-scatter")).toBeNull(); // now on the scenario tab
   });
 
   it("switches to the data tab and shows source tables + citations", () => {
@@ -103,5 +104,12 @@ describe("Dashboard scenario interactions", () => {
     const food = screen.getByTestId("decomposition-data").textContent;
     fireEvent.click(screen.getByRole("button", { name: "衣料" }));
     expect(screen.getByTestId("decomposition-data").textContent).not.toEqual(food);
+  });
+
+  it("overlays a selected input series onto the forecast chart", () => {
+    renderDashboard(seriesFile);
+    expect(screen.getByTestId("forecast-data").textContent).not.toMatch(/cpi\.food/);
+    fireEvent.click(screen.getByLabelText("cpi.food を重ねる"));
+    expect(screen.getByTestId("forecast-data").textContent).toMatch(/cpi\.food/);
   });
 });

@@ -10,7 +10,10 @@ import DriverSliders, {
   type DriverSliderSpec,
 } from "@/app/components/DriverSliders";
 import FitScatter from "@/app/components/FitScatter";
-import ForecastChart, { type ForecastRow } from "@/app/components/ForecastChart";
+import ForecastChart, {
+  type ForecastRow,
+  type Overlay,
+} from "@/app/components/ForecastChart";
 import ModelExplanation from "@/app/components/ModelExplanation";
 import SourcePanel from "@/app/components/SourcePanel";
 import SourceTables from "@/app/components/SourceTables";
@@ -31,7 +34,7 @@ import {
 import { computeForecast, decompose } from "@/app/lib/scenario";
 import { narrate } from "@/app/lib/narrate";
 
-const MONTHS = 12;
+const MONTHS = 36; // 3年先までの解釈的ホライズン（4か月目以降はドライバー横ばい）
 const PRESET_LABELS: Record<Preset, string> = {
   optimistic: "楽観",
   base: "標準",
@@ -44,6 +47,19 @@ const TAB_LABELS: Record<Tab, string> = {
   model: "モデル解説",
   data: "データソース",
 };
+
+const WINDOW_OPTIONS: { key: string; label: string; months: number }[] = [
+  { key: "all", label: "全期間", months: Infinity },
+  { key: "10y", label: "10年", months: 120 },
+  { key: "5y", label: "5年", months: 60 },
+  { key: "3y", label: "3年", months: 36 },
+  { key: "1y", label: "1年", months: 12 },
+];
+
+const OVERLAY_COLORS = [
+  "#8a5cf6", "#0ea5e9", "#f59e0b", "#ef4444", "#14b8a6",
+  "#a3a3a3", "#db2777", "#65a30d", "#7c3aed",
+];
 
 const SLIDER_BY_CLASS: Record<
   ReturnType<typeof driverClass>,
@@ -100,8 +116,6 @@ export default function Dashboard({
     return m;
   }, [categories]);
 
-  // 全ドライバーがラグ付き（≥1）なので、フラットなシナリオ水準を全月に効かせる
-  // ため maxLag ぶん先頭をパディングし、計算後に切り落とす。
   const maxLag = useMemo(
     () =>
       Math.max(
@@ -118,6 +132,12 @@ export default function Dashboard({
   const [activeCat, setActiveCat] = useState(categories[0]?.category ?? "food");
   const [showMA, setShowMA] = useState(false);
 
+  // グラフ軸・オーバーレイの操作用 state
+  const [windowKey, setWindowKey] = useState("5y");
+  const [yMin, setYMin] = useState("");
+  const [yMax, setYMax] = useState("");
+  const [overlayIds, setOverlayIds] = useState<Set<string>>(new Set());
+
   function selectPreset(p: Preset) {
     setPreset(p);
     setPaths(buildPaths(driverIds, total, p));
@@ -127,6 +147,14 @@ export default function Dashboard({
       applyOverrides(prev, { [id]: Array.from({ length: total }, () => value) }),
     );
   }
+  function toggleOverlay(id: string) {
+    setOverlayIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const foodFc = models.food
     ? computeForecast(models.food, paths, total).slice(maxLag)
@@ -135,9 +163,9 @@ export default function Dashboard({
     ? computeForecast(models.clothing, paths, total).slice(maxLag)
     : [];
 
-  const rows: ForecastRow[] = [];
+  const allRows: ForecastRow[] = [];
   for (const h of baseline.history) {
-    rows.push({
+    allRows.push({
       date: h.date,
       food: h.food_yoy,
       clothing: h.clothing_yoy,
@@ -146,13 +174,36 @@ export default function Dashboard({
   }
   const lastDate = baseline.history.at(-1)?.date ?? "2024-01-01";
   for (let i = 0; i < MONTHS; i++) {
-    rows.push({
+    allRows.push({
       date: addMonths(lastDate, i + 1),
       food: foodFc[i] ?? null,
       clothing: clothingFc[i] ?? null,
       kind: "forecast",
     });
   }
+
+  // X軸ウィンドウ（実績側の表示期間を絞る。予測は常に表示）。
+  const windowMonths =
+    WINDOW_OPTIONS.find((w) => w.key === windowKey)?.months ?? Infinity;
+  const cutoff =
+    windowMonths === Infinity ? "" : addMonths(lastDate, -windowMonths);
+  const rows = allRows.filter((r) => r.kind === "forecast" || r.date >= cutoff);
+
+  const yDomain: [number | "auto", number | "auto"] = [
+    yMin === "" ? "auto" : Number(yMin) / 100,
+    yMax === "" ? "auto" : Number(yMax) / 100,
+  ];
+
+  // 元データ（入力系列）のオーバーレイ。
+  const seriesList = series?.series ?? [];
+  const overlays: Overlay[] = seriesList
+    .filter((s) => overlayIds.has(s.series_id))
+    .map((s, i) => ({
+      id: s.series_id,
+      label: s.series_id,
+      color: OVERLAY_COLORS[i % OVERLAY_COLORS.length],
+      byDate: Object.fromEntries(s.points.map((p) => [p.date, p.value])),
+    }));
 
   const sliders: DriverSliderSpec[] = driverIds.map((id) => {
     const cls = driverClass(id);
@@ -242,7 +293,75 @@ export default function Dashboard({
             </label>
           </div>
 
-          <ForecastChart rows={rows} showMovingAverage={showMA} />
+          {/* 軸レンジ・元データ表示の操作 */}
+          <div className="flex flex-col gap-2 rounded border border-gray-200 p-2 text-xs">
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-1">
+                期間
+                <select
+                  aria-label="表示期間"
+                  value={windowKey}
+                  onChange={(e) => setWindowKey(e.target.value)}
+                  className="rounded border border-gray-300 px-1 py-0.5"
+                >
+                  {WINDOW_OPTIONS.map((w) => (
+                    <option key={w.key} value={w.key}>
+                      {w.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-1">
+                縦軸% 下限
+                <input
+                  type="number"
+                  aria-label="縦軸下限"
+                  value={yMin}
+                  onChange={(e) => setYMin(e.target.value)}
+                  placeholder="auto"
+                  className="w-16 rounded border border-gray-300 px-1 py-0.5"
+                />
+              </label>
+              <label className="flex items-center gap-1">
+                上限
+                <input
+                  type="number"
+                  aria-label="縦軸上限"
+                  value={yMax}
+                  onChange={(e) => setYMax(e.target.value)}
+                  placeholder="auto"
+                  className="w-16 rounded border border-gray-300 px-1 py-0.5"
+                />
+              </label>
+            </div>
+            {seriesList.length > 0 && (
+              <fieldset className="flex flex-wrap gap-x-3 gap-y-1">
+                <legend className="text-gray-500">元データを重ねる（右軸）</legend>
+                {seriesList.map((s) => (
+                  <label key={s.series_id} className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={overlayIds.has(s.series_id)}
+                      onChange={() => toggleOverlay(s.series_id)}
+                      aria-label={`${s.series_id} を重ねる`}
+                    />
+                    {s.series_id}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </div>
+
+          <ForecastChart
+            rows={rows}
+            showMovingAverage={showMA}
+            yDomain={yDomain}
+            overlays={overlays}
+          />
+          <p className="-mt-4 text-[10px] text-gray-400">
+            予測は先3か月がモデル主導、以降3年はドライバー横ばい仮定の解釈的延長です。
+          </p>
+
           <DriverSliders sliders={sliders} onChange={onSlider} />
 
           <div>
@@ -268,23 +387,23 @@ export default function Dashboard({
             </p>
             <DecompositionChart contributions={contributions} />
           </div>
+
+          {/* 適合状況（実績×予測）を先頭タブ下段に表示 */}
+          <div>
+            <h2 className="mb-2 text-base font-semibold">
+              予測の適合状況（実績×予測）
+            </h2>
+            <FitScatter
+              predictions={backtest.predictions ?? []}
+              category={activeCat}
+            />
+          </div>
         </div>
       )}
 
       {tab === "model" && (
         <div className="flex flex-col gap-6" data-testid="tab-model">
           <ModelExplanation coefficients={coefficients} backtest={backtest} />
-          <div>
-            <h2 className="mb-2 text-base font-semibold">適合精度（実績×予測）</h2>
-            {categories.map((c) => (
-              <div key={c.category} className="mb-4">
-                <FitScatter
-                  predictions={backtest.predictions ?? []}
-                  category={c.category}
-                />
-              </div>
-            ))}
-          </div>
           <BacktestPanel backtest={backtest} />
         </div>
       )}
