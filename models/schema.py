@@ -21,6 +21,7 @@ class CategoryModel(BaseModel):
     intercept: float
     drivers: list[DriverCoef]
     r2: float
+    resid_std: float = 0.0  # 残差標準偏差（信頼帯の伝播に使う）
     model_version: str
     data_vintage: str      # ISO 日付
 
@@ -92,3 +93,25 @@ class SeriesFile(BaseModel):
 
     generated_at: str
     series: list[SeriesData]
+
+
+class DriverForecastPoint(BaseModel):
+    date: str          # 対象月（ISO）
+    mean: float        # 予測平均（観測済み月は実績、std=0）
+    std: float         # 予測標準偏差（観測済み月は 0）
+
+
+class DriverForecast(BaseModel):
+    driver: str        # パネル列名（例 "cpi.food"）
+    label_ja: str
+    unit: str
+    points: list[DriverForecastPoint]
+
+
+class DriverForecastFile(BaseModel):
+    """driver_forecasts.json のルート。状態空間モデルによる説明変数の先行き。"""
+
+    generated_at: str
+    horizon: int       # 予測月数（例 12）
+    z: float           # 信頼帯の係数（80%→1.2816）
+    drivers: list[DriverForecast]

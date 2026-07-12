@@ -24,7 +24,9 @@ from etl.store import list_series, read_series
 from models.features import TARGET_BY_CATEGORY, make_features
 from models.nowcast import nowcast_target
 from models.ols import FitResult, fit_ols, predict
+from etl.registry import REGISTRY
 from models.backtest import run_backtest
+from models.driver_forecast import build_driver_forecasts
 from models.schema import (
     Backtest,
     BacktestPoint,
@@ -33,6 +35,7 @@ from models.schema import (
     CategoryModel,
     Coefficients,
     DriverCoef,
+    DriverForecastFile,
     SeriesData,
     SeriesFile,
     SeriesPoint,
@@ -41,6 +44,8 @@ from models.schema import (
 BACKTEST_HORIZON = 3
 BACKTEST_MIN_TRAIN = 24
 SERIES_TAIL = 120  # series.json に載せる直近月数（約10年）
+FORECAST_HORIZON = 12  # ドライバー予測・ファンチャートのホライズン（1年）
+FORECAST_Z = 1.2816  # 80% 信頼帯
 
 MODEL_VERSION = "v1"
 FORECAST_MONTHS = 3
@@ -107,7 +112,7 @@ def _fit_category(panel: pd.DataFrame, category: str):
 
 
 def _category_model(category: str, fit: FitResult, lags: dict[str, int],
-                    data_vintage: str) -> CategoryModel:
+                    data_vintage: str, resid_std: float) -> CategoryModel:
     drivers = [
         DriverCoef(
             driver=col,
@@ -122,6 +127,7 @@ def _category_model(category: str, fit: FitResult, lags: dict[str, int],
         intercept=fit.intercept,
         drivers=drivers,
         r2=fit.r2,
+        resid_std=resid_std,
         model_version=MODEL_VERSION,
         data_vintage=data_vintage,
     )
@@ -163,7 +169,8 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
     coeffs = Coefficients(
         generated_at=datetime.now(timezone.utc).isoformat(),
         categories=[
-            _category_model(cat, fits[cat][0], fits[cat][1], data_vintage)
+            _category_model(cat, fits[cat][0], fits[cat][1], data_vintage,
+                            fits[cat][2])
             for cat in categories
         ],
     )
@@ -275,11 +282,33 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
         generated_at=coeffs.generated_at, series=series_list
     )
 
+    # --- driver_forecasts.json（状態空間によるドライバー先行き＋信頼幅） ---
+    driver_union = sorted({col for v in fits.values() for col in v[1]})
+    max_lag = max((lag for v in fits.values() for lag in v[1].values()),
+                  default=0)
+    unit_of = {sid: spec.unit for sid, spec in REGISTRY.items()}
+    driver_forecasts = build_driver_forecasts(
+        panel,
+        driver_union,
+        last_target_date=last_date,
+        horizon=FORECAST_HORIZON,
+        max_lag=max_lag,
+        label_of=DRIVER_LABELS,
+        unit_of=unit_of,
+    )
+    driver_file = DriverForecastFile(
+        generated_at=coeffs.generated_at,
+        horizon=FORECAST_HORIZON,
+        z=FORECAST_Z,
+        drivers=driver_forecasts,
+    )
+
     paths = {
         "coefficients": out_dir / "coefficients.json",
         "baseline": out_dir / "baseline.json",
         "backtest": out_dir / "backtest.json",
         "series": out_dir / "series.json",
+        "driver_forecasts": out_dir / "driver_forecasts.json",
         "sources": out_dir / "sources.json",
     }
     paths["coefficients"].write_text(
@@ -288,6 +317,9 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
     paths["baseline"].write_text(baseline.model_dump_json(indent=2), encoding="utf-8")
     paths["backtest"].write_text(backtest.model_dump_json(indent=2), encoding="utf-8")
     paths["series"].write_text(series_file.model_dump_json(indent=2), encoding="utf-8")
+    paths["driver_forecasts"].write_text(
+        driver_file.model_dump_json(indent=2), encoding="utf-8"
+    )
     paths["sources"].write_text(
         json.dumps(sources, ensure_ascii=False, indent=2), encoding="utf-8"
     )

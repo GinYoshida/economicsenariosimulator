@@ -30,6 +30,11 @@ export function driverClass(driverId: string): DriverClass {
   return "cost";
 }
 
+/** プリセットが与えるドライバーごとのシフト量（状態空間の平均に加える差分）。 */
+export function driverShift(preset: Preset, driverId: string): number {
+  return PRESETS[preset][driverClass(driverId)];
+}
+
 /** プリセットに沿った各ドライバーの水準パス（長さ = months）を作る。 */
 export function buildPaths(
   driverIds: string[],

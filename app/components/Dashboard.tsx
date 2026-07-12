@@ -18,23 +18,23 @@ import ModelExplanation from "@/app/components/ModelExplanation";
 import SourcePanel from "@/app/components/SourcePanel";
 import SourceTables from "@/app/components/SourceTables";
 import {
-  toScenarioModel,
+  driverLookup,
   type Backtest,
   type Baseline,
   type Coefficients,
+  type DriverForecastFile,
   type SeriesFile,
   type SourceMeta,
 } from "@/app/lib/artifacts";
+import { driverClass, driverShift, type Preset } from "@/app/lib/presets";
 import {
-  applyOverrides,
-  buildPaths,
-  driverClass,
-  type Preset,
-} from "@/app/lib/presets";
-import { computeForecast, decompose } from "@/app/lib/scenario";
+  addMonths,
+  computeFanForecast,
+  type FanModel,
+} from "@/app/lib/fanForecast";
+import { decompose } from "@/app/lib/scenario";
 import { narrate } from "@/app/lib/narrate";
 
-const MONTHS = 36; // 3年先までの解釈的ホライズン（4か月目以降はドライバー横ばい）
 const PRESET_LABELS: Record<Preset, string> = {
   optimistic: "楽観",
   base: "標準",
@@ -61,22 +61,15 @@ const OVERLAY_COLORS = [
   "#a3a3a3", "#db2777", "#65a30d", "#7c3aed",
 ];
 
-const SLIDER_BY_CLASS: Record<
+// スライダーは各ドライバーの予測値を中心に ±span で微調整する。
+const SPAN_BY_CLASS: Record<
   ReturnType<typeof driverClass>,
-  { min: number; max: number; step: number; unit: string }
+  { span: number; step: number; unit: string }
 > = {
-  sentiment: { min: -10, max: 10, step: 1, unit: "pt" },
-  cost: { min: -0.1, max: 0.1, step: 0.005, unit: "" },
-  rate: { min: -0.5, max: 0.5, step: 0.05, unit: "%" },
+  sentiment: { span: 10, step: 1, unit: "pt" },
+  cost: { span: 0.1, step: 0.005, unit: "" },
+  rate: { span: 0.5, step: 0.05, unit: "%" },
 };
-
-function addMonths(isoDate: string, n: number): string {
-  const [y, m] = isoDate.split("-").map(Number);
-  const base = new Date(Date.UTC(y, m - 1 + n, 1));
-  const yy = base.getUTCFullYear();
-  const mm = String(base.getUTCMonth() + 1).padStart(2, "0");
-  return `${yy}-${mm}-01`;
-}
 
 function pctLabel(v: number): string {
   return `${(v * 100).toFixed(1)}%`;
@@ -88,14 +81,20 @@ export default function Dashboard({
   backtest,
   sources,
   series = null,
+  driverForecasts = null,
 }: {
   coefficients: Coefficients;
   baseline: Baseline;
   backtest: Backtest;
   sources: SourceMeta[];
   series?: SeriesFile | null;
+  driverForecasts?: DriverForecastFile | null;
 }) {
   const categories = coefficients.categories;
+  const lookup = useMemo(() => driverLookup(driverForecasts), [driverForecasts]);
+  const horizon = driverForecasts?.horizon ?? 12;
+  const z = driverForecasts?.z ?? 1.2816;
+
   const driverIds = useMemo(
     () =>
       Array.from(
@@ -109,43 +108,59 @@ export default function Dashboard({
       for (const d of c.drivers) m[d.driver] = d.label_ja;
     return m;
   }, [categories]);
-
-  const models = useMemo(() => {
-    const m: Record<string, ReturnType<typeof toScenarioModel>> = {};
-    for (const c of categories) m[c.category] = toScenarioModel(c);
+  const lagOf = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const c of categories)
+      for (const d of c.drivers) m[d.driver] = d.lag_months;
     return m;
   }, [categories]);
 
-  const maxLag = useMemo(
-    () =>
-      Math.max(
-        0,
-        ...categories.flatMap((c) => c.drivers.map((d) => d.lag_months)),
-      ),
-    [categories],
-  );
-  const total = MONTHS + maxLag;
+  const fanModels = useMemo(() => {
+    const m: Record<string, FanModel> = {};
+    for (const c of categories) {
+      m[c.category] = {
+        intercept: c.intercept,
+        residStd: c.resid_std ?? 0,
+        drivers: c.drivers.map((d) => ({
+          driver: d.driver,
+          coef: d.coef,
+          lagMonths: d.lag_months,
+        })),
+      };
+    }
+    return m;
+  }, [categories]);
 
   const [tab, setTab] = useState<Tab>("scenario");
   const [preset, setPreset] = useState<Preset>("base");
-  const [paths, setPaths] = useState(() => buildPaths(driverIds, total, "base"));
   const [activeCat, setActiveCat] = useState(categories[0]?.category ?? "food");
   const [showMA, setShowMA] = useState(false);
-
-  // グラフ軸・オーバーレイの操作用 state
+  const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [windowKey, setWindowKey] = useState("5y");
   const [yMin, setYMin] = useState("");
   const [yMax, setYMax] = useState("");
   const [overlayIds, setOverlayIds] = useState<Set<string>>(new Set());
 
+  const lastDate = baseline.history.at(-1)?.date ?? "2024-01-01";
+  const shift = (id: string) => driverShift(preset, id);
+
+  // 各ドライバーの「予測に基づく既定値」（1か月先の対象月に対応するドライバー月）。
+  const defaultOf = useMemo(() => {
+    const firstTarget = addMonths(lastDate, 1);
+    const m: Record<string, number> = {};
+    for (const id of driverIds) {
+      const dDate = addMonths(firstTarget, -(lagOf[id] ?? 0));
+      const base = lookup[id]?.[dDate]?.mean ?? 0;
+      m[id] = base + driverShift(preset, id);
+    }
+    return m;
+  }, [driverIds, lagOf, lookup, lastDate, preset]);
+
   function selectPreset(p: Preset) {
     setPreset(p);
-    setPaths(buildPaths(driverIds, total, p));
   }
   function onSlider(id: string, value: number) {
-    setPaths((prev) =>
-      applyOverrides(prev, { [id]: Array.from({ length: total }, () => value) }),
-    );
+    setOverrides((prev) => ({ ...prev, [id]: value }));
   }
   function toggleOverlay(id: string) {
     setOverlayIds((prev) => {
@@ -156,12 +171,22 @@ export default function Dashboard({
     });
   }
 
-  const foodFc = models.food
-    ? computeForecast(models.food, paths, total).slice(maxLag)
-    : [];
-  const clothingFc = models.clothing
-    ? computeForecast(models.clothing, paths, total).slice(maxLag)
-    : [];
+  const foodFan = computeFanForecast(fanModels.food, lookup, {
+    lastTargetDate: lastDate,
+    horizon,
+    z,
+    shift,
+    overrides,
+  });
+  const clothingFan = computeFanForecast(fanModels.clothing, lookup, {
+    lastTargetDate: lastDate,
+    horizon,
+    z,
+    shift,
+    overrides,
+  });
+  const foodByDate = Object.fromEntries(foodFan.map((p) => [p.date, p]));
+  const clothingByDate = Object.fromEntries(clothingFan.map((p) => [p.date, p]));
 
   const allRows: ForecastRow[] = [];
   for (const h of baseline.history) {
@@ -172,17 +197,22 @@ export default function Dashboard({
       kind: "history",
     });
   }
-  const lastDate = baseline.history.at(-1)?.date ?? "2024-01-01";
-  for (let i = 0; i < MONTHS; i++) {
+  for (let i = 0; i < horizon; i++) {
+    const date = addMonths(lastDate, i + 1);
+    const f = foodByDate[date];
+    const c = clothingByDate[date];
     allRows.push({
-      date: addMonths(lastDate, i + 1),
-      food: foodFc[i] ?? null,
-      clothing: clothingFc[i] ?? null,
+      date,
+      food: f?.mean ?? null,
+      clothing: c?.mean ?? null,
+      foodLow: f?.low ?? null,
+      foodHigh: f?.high ?? null,
+      clothingLow: c?.low ?? null,
+      clothingHigh: c?.high ?? null,
       kind: "forecast",
     });
   }
 
-  // X軸ウィンドウ（実績側の表示期間を絞る。予測は常に表示）。
   const windowMonths =
     WINDOW_OPTIONS.find((w) => w.key === windowKey)?.months ?? Infinity;
   const cutoff =
@@ -194,7 +224,6 @@ export default function Dashboard({
     yMax === "" ? "auto" : Number(yMax) / 100,
   ];
 
-  // 元データ（入力系列）のオーバーレイ。
   const seriesList = series?.series ?? [];
   const overlays: Overlay[] = seriesList
     .filter((s) => overlayIds.has(s.series_id))
@@ -207,20 +236,26 @@ export default function Dashboard({
 
   const sliders: DriverSliderSpec[] = driverIds.map((id) => {
     const cls = driverClass(id);
+    const cfg = SPAN_BY_CLASS[cls];
+    const dflt = defaultOf[id] ?? 0;
+    const value = overrides[id] ?? dflt;
     return {
       id,
       label: labelOf[id] ?? id,
-      value: paths[id]?.[0] ?? 0,
-      ...SLIDER_BY_CLASS[cls],
+      value,
+      min: dflt - cfg.span,
+      max: dflt + cfg.span,
+      step: cfg.step,
+      unit: cfg.unit,
     };
   });
 
   const activeModel = categories.find((c) => c.category === activeCat);
   const driversAt = Object.fromEntries(
-    driverIds.map((id) => [id, paths[id]?.[0] ?? 0]),
+    driverIds.map((id) => [id, overrides[id] ?? defaultOf[id] ?? 0]),
   );
   const contribMap = activeModel
-    ? decompose(toScenarioModel(activeModel), driversAt)
+    ? decompose(fanModels[activeCat], driversAt)
     : {};
   const contributions: Contribution[] = (activeModel?.drivers ?? []).map(
     (d) => ({
@@ -235,7 +270,7 @@ export default function Dashboard({
       <header>
         <h1 className="text-lg font-bold">日本 消費シナリオ シミュレータ</h1>
         <p className="text-xs text-gray-500">
-          食料・衣料の前年比をシナリオで試算（データ vintage:{" "}
+          食料・衣料の前年比を1年先までシナリオ試算（データ vintage:{" "}
           {categories[0]?.data_vintage ?? "—"}）
         </p>
       </header>
@@ -278,9 +313,9 @@ export default function Dashboard({
           </div>
 
           <div className="flex items-center gap-4 text-sm" data-testid="next-forecast">
-            <span data-testid="food-next">食料: {pctLabel(foodFc[0] ?? 0)}</span>
+            <span data-testid="food-next">食料: {pctLabel(foodFan[0]?.mean ?? 0)}</span>
             <span data-testid="clothing-next">
-              衣料: {pctLabel(clothingFc[0] ?? 0)}
+              衣料: {pctLabel(clothingFan[0]?.mean ?? 0)}
             </span>
             <label className="ml-auto flex items-center gap-1 text-xs text-gray-600">
               <input
@@ -293,7 +328,6 @@ export default function Dashboard({
             </label>
           </div>
 
-          {/* 軸レンジ・元データ表示の操作 */}
           <div className="flex flex-col gap-2 rounded border border-gray-200 p-2 text-xs">
             <div className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-1">
@@ -359,7 +393,9 @@ export default function Dashboard({
             overlays={overlays}
           />
           <p className="-mt-4 text-[10px] text-gray-400">
-            予測は先3か月がモデル主導、以降3年はドライバー横ばい仮定の解釈的延長です。
+            塗りは{Math.round(z === 1.2816 ? 80 : z === 1.96 ? 95 : 80)}%信頼帯。
+            説明変数は状態空間モデルで1年先まで予測し、その不確実性を線形モデルへ伝播。
+            スライダーで固定したドライバーは「確定値（帯なし）」として扱います。
           </p>
 
           <DriverSliders sliders={sliders} onChange={onSlider} />
@@ -388,7 +424,6 @@ export default function Dashboard({
             <DecompositionChart contributions={contributions} />
           </div>
 
-          {/* 適合状況（実績×予測）を先頭タブ下段に表示 */}
           <div>
             <h2 className="mb-2 text-base font-semibold">
               予測の適合状況（実績×予測）

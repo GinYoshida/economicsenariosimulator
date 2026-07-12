@@ -2,6 +2,7 @@
 // public/ 配下は web ルートに配信されるため /data/*.json で取得する。
 
 import type { CategoryCoef } from "@/app/lib/scenario";
+import type { DriverForecastLookup } from "@/app/lib/fanForecast";
 
 export type DriverCoefJSON = {
   driver: string;
@@ -15,6 +16,7 @@ export type CategoryModel = {
   intercept: number;
   drivers: DriverCoefJSON[];
   r2: number;
+  resid_std?: number; // 旧成果物では欠落
   model_version: string;
   data_vintage: string;
 };
@@ -120,6 +122,40 @@ export async function loadSeries(): Promise<SeriesFile | null> {
   } catch {
     return null;
   }
+}
+
+export type DriverForecastPoint = { date: string; mean: number; std: number };
+export type DriverForecast = {
+  driver: string;
+  label_ja: string;
+  unit: string;
+  points: DriverForecastPoint[];
+};
+export type DriverForecastFile = {
+  generated_at: string;
+  horizon: number;
+  z: number;
+  drivers: DriverForecast[];
+};
+
+/** driver_forecasts.json をロード。未生成なら null（フラット予測にフォールバック）。 */
+export async function loadDriverForecasts(): Promise<DriverForecastFile | null> {
+  try {
+    return await loadJson<DriverForecastFile>("driver_forecasts.json");
+  } catch {
+    return null;
+  }
+}
+
+/** DriverForecastFile を {driver: {date: {mean,std}}} の参照マップに変換。 */
+export function driverLookup(file: DriverForecastFile | null): DriverForecastLookup {
+  const map: DriverForecastLookup = {};
+  for (const d of file?.drivers ?? []) {
+    const byDate: Record<string, { mean: number; std: number }> = {};
+    for (const p of d.points) byDate[p.date] = { mean: p.mean, std: p.std };
+    map[d.driver] = byDate;
+  }
+  return map;
 }
 
 /** 成果物のカテゴリモデルをシナリオエンジンの型へ変換（lag_months -> lagMonths）。 */

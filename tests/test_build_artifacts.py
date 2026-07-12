@@ -6,7 +6,13 @@ import numpy as np
 import pandas as pd
 
 from models.build_artifacts import build_artifacts
-from models.schema import Backtest, Baseline, Coefficients, SeriesFile
+from models.schema import (
+    Backtest,
+    Baseline,
+    Coefficients,
+    DriverForecastFile,
+    SeriesFile,
+)
 from etl.provenance import Source
 from etl.store import init_db, write_series
 
@@ -84,6 +90,19 @@ def test_build_artifacts_writes_valid_schema_files(tmp_path):
     ids = {s.series_id for s in series_file.series}
     assert "household.food.real_yoy" in ids
     assert all(s.points for s in series_file.series)
+
+    # coefficients carry residual std for band propagation
+    assert all(c.resid_std >= 0 for c in coeffs.categories)
+
+    df_path = tmp_path / "driver_forecasts.json"
+    assert df_path.exists()
+    dff = DriverForecastFile(**json.loads(df_path.read_text(encoding="utf-8")))
+    assert dff.horizon == 12
+    assert dff.drivers
+    # each driver forecast has both observed (std=0) and future (std>0) points
+    for d in dff.drivers:
+        assert any(p.std == 0.0 for p in d.points)
+        assert any(p.std > 0.0 for p in d.points)
 
 
 def test_sources_json_lists_provenance(tmp_path):

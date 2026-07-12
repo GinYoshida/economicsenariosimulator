@@ -7,11 +7,13 @@ import {
   loadBacktest,
   loadBaseline,
   loadCoefficients,
+  loadDriverForecasts,
   loadSeries,
   loadSources,
   type Backtest,
   type Baseline,
   type Coefficients,
+  type DriverForecastFile,
   type SeriesFile,
   type SourceMeta,
 } from "@/app/lib/artifacts";
@@ -22,6 +24,7 @@ type Artifacts = {
   backtest: Backtest;
   sources: SourceMeta[];
   series: SeriesFile | null;
+  driverForecasts: DriverForecastFile | null;
 };
 
 export default function Home() {
@@ -35,9 +38,10 @@ export default function Home() {
       loadBacktest(),
       loadSources(),
       loadSeries(),
+      loadDriverForecasts(),
     ])
-      .then(([coefficients, baseline, backtest, sources, series]) =>
-        setData({ coefficients, baseline, backtest, sources, series }),
+      .then(([coefficients, baseline, backtest, sources, series, driverForecasts]) =>
+        setData({ coefficients, baseline, backtest, sources, series, driverForecasts }),
       )
       .catch((e: unknown) => setError(String(e)));
   }, []);
@@ -69,6 +73,7 @@ export default function Home() {
       backtest={data.backtest}
       sources={data.sources}
       series={data.series}
+      driverForecasts={data.driverForecasts}
     />
   );
 }
