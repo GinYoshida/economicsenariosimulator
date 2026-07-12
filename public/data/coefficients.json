@@ -1,53 +1,53 @@
 {
-  "generated_at": "2026-07-12T05:11:14.680495+00:00",
+  "generated_at": "2026-07-12T14:25:34.639613+00:00",
   "categories": [
     {
       "category": "food",
-      "intercept": -0.0005681886470292469,
+      "intercept": -0.0011210624485375803,
       "drivers": [
         {
           "driver": "cpi.food",
           "label_ja": "食料価格(CPI)",
-          "coef": 0.6600184645844731,
+          "coef": -0.28493551100737513,
           "lag_months": 1
         },
         {
           "driver": "fut.wheat",
           "label_ja": "小麦先物",
-          "coef": 5.616108505888799e-6,
+          "coef": 0.0006861008268503639,
           "lag_months": 2
         },
         {
           "driver": "fut.soybean",
           "label_ja": "大豆先物",
-          "coef": -0.010601062792067621,
+          "coef": -0.010575673914567381,
           "lag_months": 2
         }
       ],
-      "r2": 0.6377636049669199,
-      "resid_std": 0.013477910746000233,
+      "r2": 0.23534614583001268,
+      "resid_std": 0.012892684874562601,
       "model_version": "v1",
       "data_vintage": "2026-07-01"
     },
     {
       "category": "clothing",
-      "intercept": -0.02045464713125102,
+      "intercept": -0.02108875171162403,
       "drivers": [
         {
           "driver": "cpi.clothing",
           "label_ja": "被服価格(CPI)",
-          "coef": 0.9058050647455302,
+          "coef": -0.034973729630096075,
           "lag_months": 1
         },
         {
           "driver": "fut.cotton",
           "label_ja": "綿先物",
-          "coef": 0.012546490466970353,
+          "coef": 0.012437559622809999,
           "lag_months": 2
         }
       ],
-      "r2": 0.06074089744090683,
-      "resid_std": 0.053121035273947965,
+      "r2": 0.00883024180562364,
+      "resid_std": 0.05236561200502495,
       "model_version": "v1",
       "data_vintage": "2026-07-01"
     }
