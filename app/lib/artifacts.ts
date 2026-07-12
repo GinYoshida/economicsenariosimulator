@@ -34,6 +34,8 @@ export type BaselinePoint = {
   food_high: number;
   clothing_low: number;
   clothing_high: number;
+  food_fit?: number | null; // バックキャスト（OLS当てはめ）
+  clothing_fit?: number | null;
 };
 
 export type Baseline = {
@@ -124,7 +126,13 @@ export async function loadSeries(): Promise<SeriesFile | null> {
   }
 }
 
-export type DriverForecastPoint = { date: string; mean: number; std: number };
+export type DriverForecastPoint = {
+  date: string;
+  actual?: number | null;   // 実績（過去月）
+  backcast?: number | null; // 状態空間の当てはめ（過去月）
+  mean?: number | null;     // 予測平均（将来月）
+  std?: number | null;      // 予測std（将来月）
+};
 export type DriverForecast = {
   driver: string;
   label_ja: string;
@@ -147,12 +155,17 @@ export async function loadDriverForecasts(): Promise<DriverForecastFile | null> 
   }
 }
 
-/** DriverForecastFile を {driver: {date: {mean,std}}} の参照マップに変換。 */
+/** DriverForecastFile を {driver: {date: {mean,std}}} の参照マップに変換。
+ * 過去月は actual を平均・std=0、将来月は mean/std を使う（ファン伝播用）。 */
 export function driverLookup(file: DriverForecastFile | null): DriverForecastLookup {
   const map: DriverForecastLookup = {};
   for (const d of file?.drivers ?? []) {
     const byDate: Record<string, { mean: number; std: number }> = {};
-    for (const p of d.points) byDate[p.date] = { mean: p.mean, std: p.std };
+    for (const p of d.points) {
+      const m = p.mean ?? p.actual;
+      if (m == null) continue;
+      byDate[p.date] = { mean: m, std: p.std ?? 0 };
+    }
     map[d.driver] = byDate;
   }
   return map;

@@ -16,25 +16,30 @@ import { movingAverage } from "@/app/lib/movingAverage";
 
 export type ForecastRow = {
   date: string;
-  food: number | null;
-  clothing: number | null;
   kind: "history" | "forecast";
+  foodActual?: number | null;
+  foodBackcast?: number | null;
+  foodForecast?: number | null;
   foodLow?: number | null;
   foodHigh?: number | null;
+  clothingActual?: number | null;
+  clothingBackcast?: number | null;
+  clothingForecast?: number | null;
   clothingLow?: number | null;
   clothingHigh?: number | null;
 };
 
-export type Overlay = {
-  id: string;
-  label: string;
-  color: string;
-  byDate: Record<string, number | null>;
-};
-
 type AxisBound = number | "auto";
 
-function pct(v: number | null): string {
+const COLOR = {
+  foodActual: "#e07a3f",
+  foodForecast: "#c2410c",
+  clothingActual: "#3f6fe0",
+  clothingForecast: "#6d28d9",
+  backcast: "#9ca3af",
+};
+
+function pct(v: number | null | undefined): string {
   return v == null ? "—" : `${(v * 100).toFixed(1)}%`;
 }
 
@@ -42,35 +47,32 @@ function band(lo?: number | null, hi?: number | null): [number, number] | null {
   return lo == null || hi == null ? null : [lo, hi];
 }
 
-/** 食料・衣料の前年比（実績＋シナリオ予測＋信頼帯）＋任意の入力系列オーバーレイ。 */
+/** 食料・衣料の前年比：実績／バックキャスト／フォーキャストを色分け＋信頼帯。 */
 export default function ForecastChart({
   rows,
   showMovingAverage = false,
   maWindow = 3,
   yDomain = ["auto", "auto"],
-  overlays = [],
 }: {
   rows: ForecastRow[];
   showMovingAverage?: boolean;
   maWindow?: number;
   yDomain?: [AxisBound, AxisBound];
-  overlays?: Overlay[];
 }) {
-  const maFood = movingAverage(rows.map((r) => r.food), maWindow);
-  const maClothing = movingAverage(rows.map((r) => r.clothing), maWindow);
-  const hasBands = rows.some((r) => r.foodLow != null || r.clothingLow != null);
+  const foodCombined = rows.map((r) => r.foodActual ?? r.foodForecast ?? null);
+  const clothingCombined = rows.map(
+    (r) => r.clothingActual ?? r.clothingForecast ?? null,
+  );
+  const maFood = movingAverage(foodCombined, maWindow);
+  const maClothing = movingAverage(clothingCombined, maWindow);
 
-  const data = rows.map((r, i) => {
-    const row: Record<string, unknown> = {
-      ...r,
-      food_ma: maFood[i],
-      clothing_ma: maClothing[i],
-      food_band: band(r.foodLow, r.foodHigh),
-      clothing_band: band(r.clothingLow, r.clothingHigh),
-    };
-    for (const ov of overlays) row[`ov_${ov.id}`] = ov.byDate[r.date] ?? null;
-    return row;
-  });
+  const data = rows.map((r, i) => ({
+    ...r,
+    food_ma: maFood[i],
+    clothing_ma: maClothing[i],
+    food_band: band(r.foodLow, r.foodHigh),
+    clothing_band: band(r.clothingLow, r.clothingHigh),
+  }));
 
   const lastHistory = [...rows].reverse().find((r) => r.kind === "history");
   const boundary = lastHistory?.date;
@@ -83,61 +85,42 @@ export default function ForecastChart({
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
             <YAxis
-              yAxisId="pct"
               domain={yDomain}
               tick={{ fontSize: 10 }}
               tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
             />
-            {overlays.length > 0 && (
-              <YAxis yAxisId="raw" orientation="right" tick={{ fontSize: 10 }} width={44} />
-            )}
-            <Tooltip
-              formatter={(v, name) =>
-                typeof name === "string" && name.includes("前年比")
-                  ? pct(v == null ? null : Number(v))
-                  : v == null
-                    ? "—"
-                    : Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 })
-              }
-            />
-            {/* 信頼帯（塗り）は線より背面に描く */}
-            {hasBands && (
-              <>
-                <Area yAxisId="pct" dataKey="food_band" name="食料 帯(前年比)" stroke="none" fill="#e07a3f" fillOpacity={0.15} connectNulls isAnimationActive={false} />
-                <Area yAxisId="pct" dataKey="clothing_band" name="衣料 帯(前年比)" stroke="none" fill="#3f6fe0" fillOpacity={0.15} connectNulls isAnimationActive={false} />
-              </>
-            )}
+            <Tooltip formatter={(v) => pct(v == null ? null : Number(v))} />
+            <Area dataKey="food_band" name="食料 帯" stroke="none" fill={COLOR.foodActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
+            <Area dataKey="clothing_band" name="衣料 帯" stroke="none" fill={COLOR.clothingActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
             {boundary && (
-              <ReferenceLine yAxisId="pct" x={boundary} stroke="#888" strokeDasharray="4 4" label={{ value: "予測開始", fontSize: 10, position: "top" }} />
+              <ReferenceLine x={boundary} stroke="#888" strokeDasharray="4 4" label={{ value: "予測開始", fontSize: 10, position: "top" }} />
             )}
-            <Line yAxisId="pct" type="monotone" dataKey="food" name="食料(前年比)" stroke="#e07a3f" dot={false} />
-            <Line yAxisId="pct" type="monotone" dataKey="clothing" name="衣料(前年比)" stroke="#3f6fe0" dot={false} />
+            {/* 実績 */}
+            <Line type="monotone" dataKey="foodActual" name="食料 実績" stroke={COLOR.foodActual} dot={false} connectNulls />
+            <Line type="monotone" dataKey="clothingActual" name="衣料 実績" stroke={COLOR.clothingActual} dot={false} connectNulls />
+            {/* バックキャスト（当てはめ） */}
+            <Line type="monotone" dataKey="foodBackcast" name="食料 当てはめ" stroke={COLOR.backcast} strokeDasharray="4 2" strokeWidth={1} dot={false} connectNulls />
+            <Line type="monotone" dataKey="clothingBackcast" name="衣料 当てはめ" stroke={COLOR.backcast} strokeDasharray="4 2" strokeWidth={1} dot={false} connectNulls />
+            {/* フォーキャスト */}
+            <Line type="monotone" dataKey="foodForecast" name="食料 予測" stroke={COLOR.foodForecast} strokeWidth={2} dot={false} connectNulls />
+            <Line type="monotone" dataKey="clothingForecast" name="衣料 予測" stroke={COLOR.clothingForecast} strokeWidth={2} dot={false} connectNulls />
             {showMovingAverage && (
               <>
-                <Line yAxisId="pct" type="monotone" dataKey="food_ma" name={`食料 ${maWindow}カ月平均(前年比)`} stroke="#e07a3f" strokeDasharray="5 3" strokeWidth={1} dot={false} connectNulls />
-                <Line yAxisId="pct" type="monotone" dataKey="clothing_ma" name={`衣料 ${maWindow}カ月平均(前年比)`} stroke="#3f6fe0" strokeDasharray="5 3" strokeWidth={1} dot={false} connectNulls />
+                <Line type="monotone" dataKey="food_ma" name={`食料 ${maWindow}カ月平均`} stroke={COLOR.foodActual} strokeDasharray="5 3" strokeWidth={1} dot={false} connectNulls />
+                <Line type="monotone" dataKey="clothing_ma" name={`衣料 ${maWindow}カ月平均`} stroke={COLOR.clothingActual} strokeDasharray="5 3" strokeWidth={1} dot={false} connectNulls />
               </>
             )}
-            {overlays.map((ov) => (
-              <Line key={ov.id} yAxisId="raw" type="monotone" dataKey={`ov_${ov.id}`} name={ov.label} stroke={ov.color} strokeWidth={1} dot={false} connectNulls />
-            ))}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
       <ul className="sr-only" data-testid="forecast-data">
         {data.map((r) => (
-          <li key={r.date as string}>
-            {r.date as string} {r.kind as string} 食料{pct(r.food as number | null)} 衣料
-            {pct(r.clothing as number | null)}
-            {hasBands
-              ? ` 帯[食料${pct(r.foodLow as number | null)}〜${pct(r.foodHigh as number | null)}]`
-              : ""}
-            {showMovingAverage
-              ? ` 食料MA${pct(r.food_ma as number | null)} 衣料MA${pct(r.clothing_ma as number | null)}`
-              : ""}
-            {overlays.length > 0
-              ? ` ${overlays.map((ov) => `${ov.label}:${r[`ov_${ov.id}`] ?? "—"}`).join(" ")}`
-              : ""}
+          <li key={r.date}>
+            {r.date} {r.kind}
+            {r.kind === "history"
+              ? ` 実績 食料${pct(r.foodActual)} 衣料${pct(r.clothingActual)} 当${pct(r.foodBackcast)}`
+              : ` 予測 食料${pct(r.foodForecast)} 衣料${pct(r.clothingForecast)} 帯[${pct(r.foodLow)}〜${pct(r.foodHigh)}]`}
+            {showMovingAverage ? ` MA食${pct(r.food_ma)} MA衣${pct(r.clothing_ma)}` : ""}
           </li>
         ))}
       </ul>

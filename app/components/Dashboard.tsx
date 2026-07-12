@@ -6,13 +6,13 @@ import BacktestPanel from "@/app/components/BacktestPanel";
 import DecompositionChart, {
   type Contribution,
 } from "@/app/components/DecompositionChart";
+import DriverChart from "@/app/components/DriverChart";
 import DriverSliders, {
   type DriverSliderSpec,
 } from "@/app/components/DriverSliders";
 import FitScatter from "@/app/components/FitScatter";
 import ForecastChart, {
   type ForecastRow,
-  type Overlay,
 } from "@/app/components/ForecastChart";
 import ModelExplanation from "@/app/components/ModelExplanation";
 import SourcePanel from "@/app/components/SourcePanel";
@@ -54,11 +54,6 @@ const WINDOW_OPTIONS: { key: string; label: string; months: number }[] = [
   { key: "5y", label: "5年", months: 60 },
   { key: "3y", label: "3年", months: 36 },
   { key: "1y", label: "1年", months: 12 },
-];
-
-const OVERLAY_COLORS = [
-  "#8a5cf6", "#0ea5e9", "#f59e0b", "#ef4444", "#14b8a6",
-  "#a3a3a3", "#db2777", "#65a30d", "#7c3aed",
 ];
 
 // スライダーは各ドライバーの予測値を中心に ±span で微調整する。
@@ -139,7 +134,9 @@ export default function Dashboard({
   const [windowKey, setWindowKey] = useState("5y");
   const [yMin, setYMin] = useState("");
   const [yMax, setYMax] = useState("");
-  const [overlayIds, setOverlayIds] = useState<Set<string>>(new Set());
+  const [selectedDriver, setSelectedDriver] = useState(
+    driverForecasts?.drivers[0]?.driver ?? "",
+  );
 
   const lastDate = baseline.history.at(-1)?.date ?? "2024-01-01";
   const shift = (id: string) => driverShift(preset, id);
@@ -162,14 +159,6 @@ export default function Dashboard({
   function onSlider(id: string, value: number) {
     setOverrides((prev) => ({ ...prev, [id]: value }));
   }
-  function toggleOverlay(id: string) {
-    setOverlayIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
 
   const foodFan = computeFanForecast(fanModels.food, lookup, {
     lastTargetDate: lastDate,
@@ -189,27 +178,33 @@ export default function Dashboard({
   const clothingByDate = Object.fromEntries(clothingFan.map((p) => [p.date, p]));
 
   const allRows: ForecastRow[] = [];
-  for (const h of baseline.history) {
+  baseline.history.forEach((h, idx) => {
+    const isLast = idx === baseline.history.length - 1;
     allRows.push({
       date: h.date,
-      food: h.food_yoy,
-      clothing: h.clothing_yoy,
       kind: "history",
+      foodActual: h.food_yoy,
+      clothingActual: h.clothing_yoy,
+      foodBackcast: h.food_fit ?? null,
+      clothingBackcast: h.clothing_fit ?? null,
+      // 実績と予測線をつなぐため最終実績点は予測にも置く
+      foodForecast: isLast ? h.food_yoy : null,
+      clothingForecast: isLast ? h.clothing_yoy : null,
     });
-  }
+  });
   for (let i = 0; i < horizon; i++) {
     const date = addMonths(lastDate, i + 1);
     const f = foodByDate[date];
     const c = clothingByDate[date];
     allRows.push({
       date,
-      food: f?.mean ?? null,
-      clothing: c?.mean ?? null,
+      kind: "forecast",
+      foodForecast: f?.mean ?? null,
+      clothingForecast: c?.mean ?? null,
       foodLow: f?.low ?? null,
       foodHigh: f?.high ?? null,
       clothingLow: c?.low ?? null,
       clothingHigh: c?.high ?? null,
-      kind: "forecast",
     });
   }
 
@@ -224,15 +219,10 @@ export default function Dashboard({
     yMax === "" ? "auto" : Number(yMax) / 100,
   ];
 
-  const seriesList = series?.series ?? [];
-  const overlays: Overlay[] = seriesList
-    .filter((s) => overlayIds.has(s.series_id))
-    .map((s, i) => ({
-      id: s.series_id,
-      label: s.series_id,
-      color: OVERLAY_COLORS[i % OVERLAY_COLORS.length],
-      byDate: Object.fromEntries(s.points.map((p) => [p.date, p.value])),
-    }));
+  const driverForecastList = driverForecasts?.drivers ?? [];
+  const activeDriver =
+    driverForecastList.find((d) => d.driver === selectedDriver) ??
+    driverForecastList[0];
 
   const sliders: DriverSliderSpec[] = driverIds.map((id) => {
     const cls = driverClass(id);
@@ -368,37 +358,38 @@ export default function Dashboard({
                 />
               </label>
             </div>
-            {seriesList.length > 0 && (
-              <fieldset className="flex flex-wrap gap-x-3 gap-y-1">
-                <legend className="text-gray-500">元データを重ねる（右軸）</legend>
-                {seriesList.map((s) => (
-                  <label key={s.series_id} className="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      checked={overlayIds.has(s.series_id)}
-                      onChange={() => toggleOverlay(s.series_id)}
-                      aria-label={`${s.series_id} を重ねる`}
-                    />
-                    {s.series_id}
-                  </label>
-                ))}
-              </fieldset>
-            )}
           </div>
 
-          <ForecastChart
-            rows={rows}
-            showMovingAverage={showMA}
-            yDomain={yDomain}
-            overlays={overlays}
-          />
+          <ForecastChart rows={rows} showMovingAverage={showMA} yDomain={yDomain} />
           <p className="-mt-4 text-[10px] text-gray-400">
-            塗りは{Math.round(z === 1.2816 ? 80 : z === 1.96 ? 95 : 80)}%信頼帯。
+            塗りは{z === 1.96 ? 95 : 80}%信頼帯。実績＝実線／当てはめ＝灰破線／予測＝濃色。
             説明変数は状態空間モデルで1年先まで予測し、その不確実性を線形モデルへ伝播。
             スライダーで固定したドライバーは「確定値（帯なし）」として扱います。
           </p>
 
           <DriverSliders sliders={sliders} onChange={onSlider} />
+
+          {/* 説明変数（ドライバー）の予測は別グラフで表示 */}
+          {activeDriver && (
+            <div data-testid="driver-section">
+              <div className="mb-2 flex items-center gap-2">
+                <h2 className="text-base font-semibold">説明変数の予測</h2>
+                <select
+                  aria-label="ドライバー選択"
+                  value={activeDriver.driver}
+                  onChange={(e) => setSelectedDriver(e.target.value)}
+                  className="rounded border border-gray-300 px-1 py-0.5 text-sm"
+                >
+                  {driverForecastList.map((d) => (
+                    <option key={d.driver} value={d.driver}>
+                      {d.label_ja}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <DriverChart driver={activeDriver} z={z} />
+            </div>
+          )}
 
           <div>
             <div role="group" aria-label="カテゴリ選択" className="mb-2 flex gap-2">

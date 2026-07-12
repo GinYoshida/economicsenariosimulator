@@ -53,6 +53,23 @@ def test_denoise_clips_outliers_and_smooths():
     assert len(out) == 100
 
 
+def test_build_panel_deflates_household_by_cpi():
+    con = duckdb.connect(":memory:")
+    init_db(con)
+    n = 40
+    # nominal household food grows 10%/yr; CPI food grows 4%/yr
+    hh = list(100 * (1.10 ** (np.arange(n) / 12)))
+    cpi = list(100 * (1.04 ** (np.arange(n) / 12)))
+    write_series(con, "household.food.real_yoy", _series("2020-01-01", n, hh),
+                 _src("household.food.real_yoy"))
+    write_series(con, "cpi.food", _series("2020-01-01", n, cpi), _src("cpi.food"))
+
+    panel = build_panel(con)
+    real = panel["household.food.real_yoy"].dropna()
+    # nominal YoY ~10%, CPI YoY ~4% -> real YoY ~ (1.10/1.04-1) ~ 5.8%
+    assert real.iloc[-1] == pytest.approx(0.058, abs=0.01)
+
+
 def test_build_panel_denoises_household_targets():
     con = duckdb.connect(":memory:")
     init_db(con)

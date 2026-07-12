@@ -12,15 +12,17 @@ def _trend_series(n=60, slope=0.5, seed=0):
     return pd.Series(vals, index=idx)
 
 
-def test_forecast_driver_returns_mean_and_growing_se():
+def test_forecast_driver_returns_mean_se_and_backcast():
     y = _trend_series()
-    mean, se = forecast_driver(y, 12)
+    mean, se, fitted = forecast_driver(y, 12)
     assert len(mean) == 12 and len(se) == 12
     assert np.all(np.isfinite(mean)) and np.all(se >= 0)
     # uncertainty widens with horizon
     assert se[-1] >= se[0]
     # an upward trend keeps rising
     assert mean[-1] > mean[0]
+    # state-space provides an in-sample backcast aligned to the series
+    assert fitted is not None and len(fitted) == len(y)
 
 
 def test_forecast_driver_fallback_on_short_series():
@@ -28,10 +30,11 @@ def test_forecast_driver_fallback_on_short_series():
     y = pd.Series(
         [1.0, 2.0, 4.0, 7.0], index=pd.date_range("2024-01-01", periods=4, freq="MS")
     )
-    mean, se = forecast_driver(y, 6)  # < MIN_OBS -> random-walk+drift fallback
+    mean, se, fitted = forecast_driver(y, 6)  # < MIN_OBS -> fallback
     assert len(mean) == 6
     assert mean[0] > 7.0  # positive drift continues
     assert se[-1] > se[0]  # widening band
+    assert fitted is None  # no backcast in fallback
 
 
 def test_build_driver_forecasts_observed_then_future():
@@ -51,12 +54,15 @@ def test_build_driver_forecasts_observed_then_future():
     df = out[0]
     assert isinstance(df, DriverForecast)
     by_date = {p.date: p for p in df.points}
-    # an observed month has std 0
-    assert by_date["2023-10-01"].std == 0.0
-    # a future month (beyond the driver's last obs 2023-12) has std > 0
+    # an observed month has actual + backcast, no forecast mean/std
+    assert by_date["2023-10-01"].actual is not None
+    assert by_date["2023-10-01"].backcast is not None
+    assert by_date["2023-10-01"].mean is None
+    # a future month (beyond the driver's last obs 2023-12) has mean + std
+    assert by_date["2024-06-01"].mean is not None
     assert by_date["2024-06-01"].std > 0.0
-    # covers last_target - max_lag .. last_target + horizon
-    assert "2023-08-01" in by_date
+    assert by_date["2024-06-01"].actual is None
+    # covers the propagation range up to last_target + horizon
     assert "2024-10-01" in by_date
 
 

@@ -24,8 +24,10 @@ def _months_between(a: pd.Timestamp, b: pd.Timestamp) -> int:
     return (b.year - a.year) * 12 + (b.month - a.month)
 
 
-def _fallback(y: pd.Series, horizon: int) -> tuple[np.ndarray, np.ndarray]:
-    """ランダムウォーク＋ドリフト。信頼幅は時間の平方根で拡大。"""
+def _fallback(
+    y: pd.Series, horizon: int
+) -> tuple[np.ndarray, np.ndarray, pd.Series | None]:
+    """ランダムウォーク＋ドリフト。信頼幅は時間の平方根で拡大。バックキャストは無し。"""
     y = y.dropna().astype(float)
     last = float(y.iloc[-1]) if len(y) else 0.0
     diffs = y.diff().dropna()
@@ -34,11 +36,17 @@ def _fallback(y: pd.Series, horizon: int) -> tuple[np.ndarray, np.ndarray]:
     steps = np.arange(1, horizon + 1)
     mean = last + drift * steps
     se = sigma * np.sqrt(steps)
-    return mean, se
+    return mean, se, None
 
 
-def forecast_driver(y: pd.Series, horizon: int) -> tuple[np.ndarray, np.ndarray]:
-    """``horizon`` か月先の (平均, 標準偏差) を返す。"""
+def forecast_driver(
+    y: pd.Series, horizon: int
+) -> tuple[np.ndarray, np.ndarray, pd.Series | None]:
+    """``horizon`` か月先の (平均, 標準偏差, 当てはめ) を返す。
+
+    当てはめ（backcast）は状態空間の 1 期先内挿値（fittedvalues）。
+    フォールバック時は None。
+    """
     y = y.dropna().astype(float)
     if len(y) < MIN_OBS:
         return _fallback(y, horizon)
@@ -53,8 +61,9 @@ def forecast_driver(y: pd.Series, horizon: int) -> tuple[np.ndarray, np.ndarray]
             fc = res.get_forecast(horizon)
             mean = np.asarray(fc.predicted_mean, dtype=float)
             se = np.asarray(fc.se_mean, dtype=float)
+            fitted = pd.Series(np.asarray(res.fittedvalues, dtype=float), index=y.index)
         if np.all(np.isfinite(mean)) and np.all(np.isfinite(se)):
-            return mean, np.abs(se)
+            return mean, np.abs(se), fitted
     except Exception:
         pass
     return _fallback(y, horizon)
@@ -69,15 +78,15 @@ def build_driver_forecasts(
     max_lag: int,
     label_of: dict[str, str],
     unit_of: dict[str, str],
+    history_tail: int = 120,
 ) -> list[DriverForecast]:
-    """各ドライバーの日付キー予測（観測実績＋将来予測）を作る。
+    """各ドライバーの日付キー系列（実績・バックキャスト・予測）を作る。
 
-    対象日付は ``last_target_date - max_lag`` 〜 ``last_target_date + horizon``。
-    目的変数月 t に対しドライバーは t-lag を参照するため、この範囲を用意する。
+    過去月: ``actual``（YoY実績）＋ ``backcast``（状態空間当てはめ）。
+    将来月: ``mean``/``std``（予測）。直近 ``history_tail`` か月＋horizon を出力。
+    伝播用に ``last_target_date - max_lag`` までは必ず含める。
     """
-    start = (last_target_date - pd.DateOffset(months=max_lag)).normalize()
     end = (last_target_date + pd.DateOffset(months=horizon)).normalize()
-    dates = pd.date_range(start, end, freq="MS")
 
     out: list[DriverForecast] = []
     for col in drivers:
@@ -88,25 +97,40 @@ def build_driver_forecasts(
             continue
         last_obs = s.index.max()
         steps = max(1, _months_between(last_obs, end))
-        mean, se = forecast_driver(s, steps)
+        mean, se, fitted = forecast_driver(s, steps)
+
+        # 履歴の表示範囲（直近 history_tail、ただし伝播に必要な範囲は確保）。
+        hist_start = min(
+            s.index[-history_tail] if len(s) > history_tail else s.index[0],
+            (last_target_date - pd.DateOffset(months=max_lag)).normalize(),
+        )
+        hist = s[s.index >= hist_start]
 
         points: list[DriverForecastPoint] = []
-        for d in dates:
-            if d in s.index:
-                points.append(
-                    DriverForecastPoint(date=d.date().isoformat(),
-                                        mean=float(s[d]), std=0.0)
+        for d, val in hist.items():
+            bc = (
+                float(fitted[d])
+                if fitted is not None and d in fitted.index
+                else None
+            )
+            points.append(
+                DriverForecastPoint(
+                    date=d.date().isoformat(), actual=float(val), backcast=bc
                 )
-            elif d > last_obs:
-                k = _months_between(last_obs, d)  # 1-based ステップ
-                if 1 <= k <= len(mean):
-                    points.append(
-                        DriverForecastPoint(
-                            date=d.date().isoformat(),
-                            mean=float(mean[k - 1]),
-                            std=float(se[k - 1]),
-                        )
+            )
+        future = pd.date_range(
+            (last_obs + pd.DateOffset(months=1)).normalize(), end, freq="MS"
+        )
+        for d in future:
+            k = _months_between(last_obs, d)
+            if 1 <= k <= len(mean):
+                points.append(
+                    DriverForecastPoint(
+                        date=d.date().isoformat(),
+                        mean=float(mean[k - 1]),
+                        std=float(se[k - 1]),
                     )
+                )
         if points:
             out.append(
                 DriverForecast(

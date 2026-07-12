@@ -99,7 +99,10 @@ def _residual_sigma(fit: FitResult, X: pd.DataFrame, y: pd.Series) -> float:
 
 
 def _fit_category(panel: pd.DataFrame, category: str):
-    """利用可能なドライバーだけで OLS を学習。``(fit, lags, sigma)`` を返す。"""
+    """利用可能なドライバーだけで OLS を学習。``(fit, lags, sigma, fitted)`` を返す。
+
+    ``fitted`` は学習データ上の当てはめ（バックキャスト）を日付索引の Series で返す。
+    """
     lags = {
         col: lag
         for col, lag in CATEGORY_DRIVERS[category].items()
@@ -108,7 +111,8 @@ def _fit_category(panel: pd.DataFrame, category: str):
     X, y = make_features(panel, category, lags=lags)
     fit = fit_ols(X, y)
     sigma = _residual_sigma(fit, X, y)
-    return fit, lags, sigma
+    fitted = pd.Series(predict(fit, X), index=X.index)
+    return fit, lags, sigma, fitted
 
 
 def _category_model(category: str, fit: FitResult, lags: dict[str, int],
@@ -154,11 +158,11 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
     panel = build_panel(con)
 
     categories = ["food", "clothing"]
-    fits: dict[str, tuple[FitResult, dict[str, int], float]] = {}
+    fits: dict[str, tuple] = {}
     nowcasts: dict[str, pd.Series] = {}
     for cat in categories:
-        fit, lags, sigma = _fit_category(panel, cat)
-        fits[cat] = (fit, lags, sigma)
+        fit, lags, sigma, fitted = _fit_category(panel, cat)
+        fits[cat] = (fit, lags, sigma, fitted)
         nowcasts[cat] = nowcast_target(panel, cat, fit)
 
     # data vintage = 目的変数（ナウキャスト後）が揃う最終月。
@@ -181,6 +185,15 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
     sig_f = fits["food"][2]
     sig_c = fits["clothing"][2]
 
+    food_fit = fits["food"][3]
+    cloth_fit = fits["clothing"][3]
+
+    def _fit_at(series: pd.Series, date) -> float | None:
+        if date in series.index:
+            v = float(series.loc[date])
+            return None if pd.isna(v) else v
+        return None
+
     history: list[BaselinePoint] = []
     common = food_y.dropna().index.intersection(cloth_y.dropna().index)
     for date in common:
@@ -192,6 +205,8 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
                 food_yoy=f, clothing_yoy=c,
                 food_low=f - _Z * sig_f, food_high=f + _Z * sig_f,
                 clothing_low=c - _Z * sig_c, clothing_high=c + _Z * sig_c,
+                food_fit=_fit_at(food_fit, date),
+                clothing_fit=_fit_at(cloth_fit, date),
             )
         )
 

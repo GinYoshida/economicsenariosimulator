@@ -99,10 +99,10 @@ def test_build_artifacts_writes_valid_schema_files(tmp_path):
     dff = DriverForecastFile(**json.loads(df_path.read_text(encoding="utf-8")))
     assert dff.horizon == 12
     assert dff.drivers
-    # each driver forecast has both observed (std=0) and future (std>0) points
+    # each driver has history (actual) and future (mean+std>0) points
     for d in dff.drivers:
-        assert any(p.std == 0.0 for p in d.points)
-        assert any(p.std > 0.0 for p in d.points)
+        assert any(p.actual is not None for p in d.points)
+        assert any(p.mean is not None and (p.std or 0) > 0.0 for p in d.points)
 
 
 def test_sources_json_lists_provenance(tmp_path):

@@ -38,6 +38,13 @@ DENOISE_TARGETS: set[str] = {
     "household.clothing.real_yoy",
 }
 
+# 家計調査は名目（金額）YoYなので、対応CPIでデフレートして実質YoYにする。
+# real = (1 + nominal) / (1 + cpi) - 1
+DEFLATE_BY: dict[str, str] = {
+    "household.food.real_yoy": "cpi.food",
+    "household.clothing.real_yoy": "cpi.clothing",
+}
+
 
 def to_yoy(s: pd.Series) -> pd.Series:
     """前年同月比（比率）。先頭 12 か月は NaN。"""
@@ -92,8 +99,16 @@ def build_panel(
         col = s.reindex(index)  # 外部結合: 端の未公表月は NaN（前方補完なし）
         if sid in yoy_series:
             col = to_yoy(col)
-        if sid in denoise_targets:
-            col = denoise(col)
         panel[sid] = col
+
+    # 名目 → 実質（対応CPIでデフレート）。CPI列がある場合のみ。
+    for target, cpi in DEFLATE_BY.items():
+        if target in panel.columns and cpi in panel.columns:
+            panel[target] = (1.0 + panel[target]) / (1.0 + panel[cpi]) - 1.0
+
+    # 目的変数のノイズ低減（デフレート後に適用）。
+    for target in denoise_targets:
+        if target in panel.columns:
+            panel[target] = denoise(panel[target])
 
     return panel

@@ -6,6 +6,7 @@ import type {
   Backtest,
   Baseline,
   Coefficients,
+  DriverForecastFile,
   SeriesFile,
   SourceMeta,
 } from "@/app/lib/artifacts";
@@ -14,6 +15,32 @@ import coefficients from "@/public/data/coefficients.json";
 import baseline from "@/public/data/baseline.json";
 import backtest from "@/public/data/backtest.json";
 import sources from "@/public/data/sources.json";
+
+const driverForecasts: DriverForecastFile = {
+  generated_at: "2026-06-22T00:00:00Z",
+  horizon: 12,
+  z: 1.2816,
+  drivers: [
+    {
+      driver: "cpi.food",
+      label_ja: "食料価格(CPI)",
+      unit: "index",
+      points: [
+        { date: "2024-01-01", actual: 0.03, backcast: 0.028 },
+        { date: "2024-02-01", mean: 0.031, std: 0.01 },
+      ],
+    },
+    {
+      driver: "cpi.clothing",
+      label_ja: "被服価格(CPI)",
+      unit: "index",
+      points: [
+        { date: "2024-01-01", actual: 0.01, backcast: 0.009 },
+        { date: "2024-02-01", mean: 0.011, std: 0.02 },
+      ],
+    },
+  ],
+};
 
 const seriesFile: SeriesFile = {
   generated_at: "2026-06-22T00:00:00Z",
@@ -32,7 +59,10 @@ const seriesFile: SeriesFile = {
   ],
 };
 
-function renderDashboard(series: SeriesFile | null = null) {
+function renderDashboard(
+  dff: DriverForecastFile | null = null,
+  series: SeriesFile | null = null,
+) {
   return render(
     <Dashboard
       coefficients={coefficients as Coefficients}
@@ -40,6 +70,7 @@ function renderDashboard(series: SeriesFile | null = null) {
       backtest={backtest as Backtest}
       sources={sources as SourceMeta[]}
       series={series}
+      driverForecasts={dff}
     />,
   );
 }
@@ -66,7 +97,7 @@ describe("Dashboard tabs", () => {
   });
 
   it("switches to the data tab and shows source tables + citations", () => {
-    renderDashboard(seriesFile);
+    renderDashboard(null, seriesFile);
     fireEvent.click(screen.getByRole("tab", { name: "データソース" }));
     expect(screen.getByTestId("source-tables")).toBeInTheDocument();
     expect(screen.getByTestId("series-cpi.food")).toBeInTheDocument();
@@ -106,10 +137,20 @@ describe("Dashboard scenario interactions", () => {
     expect(screen.getByTestId("decomposition-data").textContent).not.toEqual(food);
   });
 
-  it("overlays a selected input series onto the forecast chart", () => {
-    renderDashboard(seriesFile);
-    expect(screen.getByTestId("forecast-data").textContent).not.toMatch(/cpi\.food/);
-    fireEvent.click(screen.getByLabelText("cpi.food を重ねる"));
-    expect(screen.getByTestId("forecast-data").textContent).toMatch(/cpi\.food/);
+  it("shows the driver forecast in a separate chart and switches driver", () => {
+    renderDashboard(driverForecasts);
+    expect(screen.getByTestId("driver-section")).toBeInTheDocument();
+    const chart = screen.getByTestId("driver-chart");
+    const first = within(chart).getByTestId("driver-chart-data").textContent;
+    fireEvent.change(screen.getByLabelText("ドライバー選択"), {
+      target: { value: "cpi.clothing" },
+    });
+    const second = screen.getByTestId("driver-chart-data").textContent;
+    expect(second).not.toEqual(first);
+  });
+
+  it("has no driver section when driver forecasts are absent", () => {
+    renderDashboard(null);
+    expect(screen.queryByTestId("driver-section")).toBeNull();
   });
 });

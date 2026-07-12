@@ -39,6 +39,8 @@ class BaselinePoint(BaseModel):
     food_high: float
     clothing_low: float
     clothing_high: float
+    food_fit: float | None = None      # バックキャスト（OLS 当てはめ）
+    clothing_fit: float | None = None
 
 
 class Baseline(BaseModel):
@@ -96,9 +98,11 @@ class SeriesFile(BaseModel):
 
 
 class DriverForecastPoint(BaseModel):
-    date: str          # 対象月（ISO）
-    mean: float        # 予測平均（観測済み月は実績、std=0）
-    std: float         # 予測標準偏差（観測済み月は 0）
+    date: str                       # 対象月（ISO）
+    actual: float | None = None     # 実績（YoY観測、過去月のみ）
+    backcast: float | None = None   # 状態空間の当てはめ（過去月のみ）
+    mean: float | None = None       # 予測平均（将来月のみ）
+    std: float | None = None        # 予測標準偏差（将来月のみ）
 
 
 class DriverForecast(BaseModel):
