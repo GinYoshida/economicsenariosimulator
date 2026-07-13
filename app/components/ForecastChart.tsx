@@ -4,6 +4,7 @@ import {
   Area,
   CartesianGrid,
   ComposedChart,
+  Legend,
   Line,
   ReferenceLine,
   ResponsiveContainer,
@@ -90,8 +91,9 @@ export default function ForecastChart({
               tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
             />
             <Tooltip formatter={(v) => pct(v == null ? null : Number(v))} />
-            <Area dataKey="food_band" name="食料 帯" stroke="none" fill={COLOR.foodActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
-            <Area dataKey="clothing_band" name="衣料 帯" stroke="none" fill={COLOR.clothingActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
+            <Legend wrapperStyle={{ fontSize: 10 }} />
+            <Area dataKey="food_band" name="食料 帯" legendType="none" stroke="none" fill={COLOR.foodActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
+            <Area dataKey="clothing_band" name="衣料 帯" legendType="none" stroke="none" fill={COLOR.clothingActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
             {boundary && (
               <ReferenceLine x={boundary} stroke="#888" strokeDasharray="4 4" label={{ value: "予測開始", fontSize: 10, position: "top" }} />
             )}
@@ -106,8 +108,8 @@ export default function ForecastChart({
             <Line type="monotone" dataKey="clothingForecast" name="衣料 予測" stroke={COLOR.clothingForecast} strokeWidth={2} dot={false} connectNulls />
             {showMovingAverage && (
               <>
-                <Line type="monotone" dataKey="food_ma" name={`食料 ${maWindow}カ月平均`} stroke={COLOR.foodActual} strokeDasharray="5 3" strokeWidth={1} dot={false} connectNulls />
-                <Line type="monotone" dataKey="clothing_ma" name={`衣料 ${maWindow}カ月平均`} stroke={COLOR.clothingActual} strokeDasharray="5 3" strokeWidth={1} dot={false} connectNulls />
+                <Line type="monotone" dataKey="food_ma" name={`食料 ${maWindow}カ月平均`} legendType="none" stroke={COLOR.foodActual} strokeDasharray="5 3" strokeWidth={1} dot={false} connectNulls />
+                <Line type="monotone" dataKey="clothing_ma" name={`衣料 ${maWindow}カ月平均`} legendType="none" stroke={COLOR.clothingActual} strokeDasharray="5 3" strokeWidth={1} dot={false} connectNulls />
               </>
             )}
           </ComposedChart>

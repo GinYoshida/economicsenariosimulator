@@ -4,6 +4,7 @@ import {
   Area,
   CartesianGrid,
   ComposedChart,
+  Legend,
   Line,
   ReferenceLine,
   ResponsiveContainer,
@@ -54,7 +55,8 @@ export default function DriverChart({
             <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
             <YAxis tick={{ fontSize: 10 }} />
             <Tooltip formatter={(v) => (v == null ? "—" : Number(v).toFixed(3))} />
-            <Area dataKey="band" name="予測帯" stroke="none" fill={COLOR.forecast} fillOpacity={0.15} connectNulls isAnimationActive={false} />
+            <Legend wrapperStyle={{ fontSize: 10 }} />
+            <Area dataKey="band" name="予測帯" legendType="none" stroke="none" fill={COLOR.forecast} fillOpacity={0.15} connectNulls isAnimationActive={false} />
             {lastHistory && (
               <ReferenceLine x={lastHistory.date} stroke="#888" strokeDasharray="4 4" label={{ value: "予測開始", fontSize: 10, position: "top" }} />
             )}
