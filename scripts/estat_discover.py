@@ -120,7 +120,7 @@ HEADLINE_HINTS = ["総合"]  # CPI 総合（実質所得デフレータ）
 
 
 def _time_span(client: httpx.Client, app_id: str, stats_data_id: str):
-    """統計表の時間軸 (件数, 先頭, 末尾) を返す（順序は表による）。"""
+    """統計表の時間軸 (軸名, 件数, 先頭, 末尾) を返す（順序は表による）。"""
     meta = _get(client, "getMetaInfo", {"appId": app_id, "statsDataId": stats_data_id})
     for obj in _as_list(
         meta.get("GET_META_INFO", {}).get("METADATA_INF", {})
@@ -129,13 +129,14 @@ def _time_span(client: httpx.Client, app_id: str, stats_data_id: str):
         if obj.get("@id") == "time":
             classes = _as_list(obj.get("CLASS"))
             if not classes:
-                return 0, "", ""
+                return obj.get("@name", ""), 0, "", ""
             return (
+                obj.get("@name", ""),
                 len(classes),
                 classes[0].get("@name", ""),
                 classes[-1].get("@name", ""),
             )
-    return 0, "", ""
+    return "", 0, "", ""
 
 
 def inspect_table(client: httpx.Client, app_id: str, stats_data_id: str,
@@ -153,6 +154,11 @@ def inspect_table(client: httpx.Client, app_id: str, stats_data_id: str,
         extra = ""
         if axis_id == "time" and classes:
             extra = f" span[{classes[0].get('@name')} .. {classes[-1].get('@name')}]"
+        if axis_id in ("cat01", "cat02", "cat03", "cat04") and classes:
+            head = "; ".join(
+                f"{c.get('@code')}={c.get('@name')}" for c in classes[:6]
+            )
+            extra = f" e.g. {head}"
         print(f"  AXIS {axis_id} ({axis_name}) n={len(classes)}{extra}")
         if axis_id and axis_id.startswith("cat"):
             for cls in classes:
@@ -164,27 +170,31 @@ def inspect_table(client: httpx.Client, app_id: str, stats_data_id: str,
 
 
 def explore_wage(client: httpx.Client, app_id: str) -> list[str]:
-    """毎月勤労統計から賃金表の候補を、時間軸レンジ付きで表示。候補ID を返す。"""
+    """毎月勤労統計から賃金表の候補を、時間軸(名前・範囲)付きで表示。候補ID を返す。
+
+    直近まで伸びる「月次（年月）」の表を見つけるのが目的。検索語を変えて広めに拾う。
+    """
     print("\n" + "=" * 72)
     print(f"賃金（毎月勤労統計 全国調査 statsCode={STATS_CODE_MLS}）")
-    tables = _list_tables(client, app_id, STATS_CODE_MLS)
-    print(f"  total tables: {len(tables)}")
+    seen: dict[str, dict] = {}
+    for word in ["現金給与総額", "実質賃金指数", "実数 現金給与総額", "賃金指数 現金給与総額"]:
+        for t in _list_tables(client, app_id, STATS_CODE_MLS, search_word=word):
+            seen.setdefault(str(t.get("@id")), t)
+    print(f"  unique candidates: {len(seen)}")
 
-    def is_monthly(t):
-        return "月" in _text(t.get("CYCLE"))
-
-    def hit(t):
-        blob = _describe(t)[1]
-        return any(w in blob for w in WAGE_HINTS)
-
-    candidates = [t for t in tables if is_monthly(t) and hit(t)]
-    print(f"  monthly wage candidates: {len(candidates)}")
     ids: list[str] = []
-    for t in candidates[:10]:
-        tid, name, cycle, survey = _describe(t)
-        n, first, last = _time_span(client, app_id, tid)
+    rows = []
+    for tid, t in seen.items():
+        if "月" not in _text(t.get("CYCLE")):
+            continue
+        axis, n, first, last = _time_span(client, app_id, tid)
+        rows.append((tid, _describe(t)[1], axis, n, first, last))
+    # 直近(2020年代)まで伸びるものを上に。
+    rows.sort(key=lambda r: (("202" in r[4] or "202" in r[5]), r[3]), reverse=True)
+    for tid, name, axis, n, first, last in rows[:15]:
         ids.append(tid)
-        print(f"  - statsDataId={tid} | {name} | cycle={cycle} | time n={n} span[{first} .. {last}]")
+        print(f"  - statsDataId={tid} | {name}")
+        print(f"      time軸='{axis}' n={n} span[{first} .. {last}]")
     return ids
 
 
@@ -195,15 +205,11 @@ def main() -> int:
         return 2
     try:
         with httpx.Client() as client:
-            # 賃金表の候補と期間
+            # 賃金表の候補と期間（総合CPIは code=0001 で確定済み）
             wage_ids = explore_wage(client, app_id)
-            # 上位2候補の軸（産業/規模/就業形態/表章/時間）を確認
-            for sid in wage_ids[:2]:
+            # 上位3候補の軸（産業/規模/就業形態/表章/時間）を確認
+            for sid in wage_ids[:3]:
                 inspect_table(client, app_id, sid, cat_hints=WAGE_HINTS)
-            # 総合CPIコード（実質所得デフレータ）を確定
-            print("\n" + "=" * 72)
-            print("CPI 総合コード確認 (0003427113)")
-            inspect_table(client, app_id, "0003427113", cat_hints=HEADLINE_HINTS)
     except httpx.HTTPError as e:
         print(f"HTTP error: {e}", file=sys.stderr)
         return 1
