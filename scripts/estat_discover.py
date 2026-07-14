@@ -113,12 +113,33 @@ def explore(client: httpx.Client, app_id: str, label: str, stats_code: str,
             print(f"      (meta error: {e})")
 
 
-# 確定した統計表の全軸（CLASS_OBJ）を出力して、cdArea/cdTab 等の絞り込み
-# コードを確定するための対象。
-TABLES_TO_INSPECT = ["0002070001", "0003427113"]
+# 毎月勤労統計調査 全国調査（賃金）
+STATS_CODE_MLS = "00450071"
+WAGE_HINTS = ["現金給与総額", "実質賃金", "賃金指数", "給与"]
+HEADLINE_HINTS = ["総合"]  # CPI 総合（実質所得デフレータ）
 
 
-def inspect_table(client: httpx.Client, app_id: str, stats_data_id: str) -> None:
+def _time_span(client: httpx.Client, app_id: str, stats_data_id: str):
+    """統計表の時間軸 (件数, 先頭, 末尾) を返す（順序は表による）。"""
+    meta = _get(client, "getMetaInfo", {"appId": app_id, "statsDataId": stats_data_id})
+    for obj in _as_list(
+        meta.get("GET_META_INFO", {}).get("METADATA_INF", {})
+        .get("CLASS_INF", {}).get("CLASS_OBJ")
+    ):
+        if obj.get("@id") == "time":
+            classes = _as_list(obj.get("CLASS"))
+            if not classes:
+                return 0, "", ""
+            return (
+                len(classes),
+                classes[0].get("@name", ""),
+                classes[-1].get("@name", ""),
+            )
+    return 0, "", ""
+
+
+def inspect_table(client: httpx.Client, app_id: str, stats_data_id: str,
+                  cat_hints: list[str]) -> None:
     print("\n" + "#" * 72)
     print(f"INSPECT statsDataId={stats_data_id}")
     meta = _get(client, "getMetaInfo", {"appId": app_id, "statsDataId": stats_data_id})
@@ -129,16 +150,42 @@ def inspect_table(client: httpx.Client, app_id: str, stats_data_id: str) -> None
         axis_id = obj.get("@id")
         axis_name = obj.get("@name")
         classes = _as_list(obj.get("CLASS"))
-        print(f"  AXIS {axis_id} ({axis_name}) n={len(classes)}")
-        if axis_id == "cat01":
-            # 品目は多いので食料/被服のみ表示。
+        extra = ""
+        if axis_id == "time" and classes:
+            extra = f" span[{classes[0].get('@name')} .. {classes[-1].get('@name')}]"
+        print(f"  AXIS {axis_id} ({axis_name}) n={len(classes)}{extra}")
+        if axis_id and axis_id.startswith("cat"):
             for cls in classes:
-                if any(h in cls.get("@name", "") for h in CATEGORY_HINTS):
+                if any(h in cls.get("@name", "") for h in cat_hints):
                     print(f"      code={cls.get('@code')} name={cls.get('@name')} level={cls.get('@level')}")
-        else:
-            # tab/area/time など軸の先頭数件を表示。
-            for cls in classes[:10]:
+        elif axis_id != "time":
+            for cls in classes[:12]:
                 print(f"      code={cls.get('@code')} name={cls.get('@name')}")
+
+
+def explore_wage(client: httpx.Client, app_id: str) -> list[str]:
+    """毎月勤労統計から賃金表の候補を、時間軸レンジ付きで表示。候補ID を返す。"""
+    print("\n" + "=" * 72)
+    print(f"賃金（毎月勤労統計 全国調査 statsCode={STATS_CODE_MLS}）")
+    tables = _list_tables(client, app_id, STATS_CODE_MLS)
+    print(f"  total tables: {len(tables)}")
+
+    def is_monthly(t):
+        return "月" in _text(t.get("CYCLE"))
+
+    def hit(t):
+        blob = _describe(t)[1]
+        return any(w in blob for w in WAGE_HINTS)
+
+    candidates = [t for t in tables if is_monthly(t) and hit(t)]
+    print(f"  monthly wage candidates: {len(candidates)}")
+    ids: list[str] = []
+    for t in candidates[:10]:
+        tid, name, cycle, survey = _describe(t)
+        n, first, last = _time_span(client, app_id, tid)
+        ids.append(tid)
+        print(f"  - statsDataId={tid} | {name} | cycle={cycle} | time n={n} span[{first} .. {last}]")
+    return ids
 
 
 def main() -> int:
@@ -148,8 +195,15 @@ def main() -> int:
         return 2
     try:
         with httpx.Client() as client:
-            for sid in TABLES_TO_INSPECT:
-                inspect_table(client, app_id, sid)
+            # 賃金表の候補と期間
+            wage_ids = explore_wage(client, app_id)
+            # 上位2候補の軸（産業/規模/就業形態/表章/時間）を確認
+            for sid in wage_ids[:2]:
+                inspect_table(client, app_id, sid, cat_hints=WAGE_HINTS)
+            # 総合CPIコード（実質所得デフレータ）を確定
+            print("\n" + "=" * 72)
+            print("CPI 総合コード確認 (0003427113)")
+            inspect_table(client, app_id, "0003427113", cat_hints=HEADLINE_HINTS)
     except httpx.HTTPError as e:
         print(f"HTTP error: {e}", file=sys.stderr)
         return 1
