@@ -45,8 +45,8 @@ def _text(node) -> str:
 
 
 def _list_tables(client: httpx.Client, app_id: str, stats_code: str,
-                 search_word: str = "") -> list[dict]:
-    params = {"appId": app_id, "statsCode": stats_code, "limit": "100"}
+                 search_word: str = "", limit: str = "300") -> list[dict]:
+    params = {"appId": app_id, "statsCode": stats_code, "limit": limit}
     if search_word:
         params["searchWord"] = search_word
     data = _get(client, "getStatsList", params)
@@ -169,33 +169,87 @@ def inspect_table(client: httpx.Client, app_id: str, stats_data_id: str,
                 print(f"      code={cls.get('@code')} name={cls.get('@name')}")
 
 
+# 現行表を出すための検索語（2020年基準・実数/指数・給与項目・対前年同月比 等）。
+WAGE_SEARCH_WORDS = [
+    "現金給与総額",
+    "実質賃金指数",
+    "実数 現金給与総額",
+    "賃金指数 現金給与総額",
+    "きまって支給する給与",
+    "2020年基準",
+    "実数・指数",
+    "対前年同月比 現金給与総額",
+    "毎月勤労統計調査 全国 賃金",
+]
+
+
+def _end_year(*names: str) -> int:
+    """時間軸ラベル群から末尾の西暦4桁（2010〜2099）を拾う。無ければ 0。"""
+    best = 0
+    for name in names:
+        digits = ""
+        for ch in name:
+            if ch.isdigit():
+                digits += ch
+            else:
+                if len(digits) >= 4:
+                    year = int(digits[:4])
+                    if 2010 <= year <= 2099 and year > best:
+                        best = year
+                digits = ""
+        if len(digits) >= 4:
+            year = int(digits[:4])
+            if 2010 <= year <= 2099 and year > best:
+                best = year
+    return best
+
+
 def explore_wage(client: httpx.Client, app_id: str) -> list[str]:
     """毎月勤労統計から賃金表の候補を、時間軸(名前・範囲)付きで表示。候補ID を返す。
 
-    直近まで伸びる「月次（年月）」の表を見つけるのが目的。検索語を変えて広めに拾う。
+    目的は 2016〜2026 まで伸びる「月次（年月）」の現行表を特定すること。検索語を広げ、
+    各表の時間軸の末尾西暦を評価し、2016年以降まで届く表だけを昇格して表示する。
     """
     print("\n" + "=" * 72)
     print(f"賃金（毎月勤労統計 全国調査 statsCode={STATS_CODE_MLS}）")
     seen: dict[str, dict] = {}
-    for word in ["現金給与総額", "実質賃金指数", "実数 現金給与総額", "賃金指数 現金給与総額"]:
-        for t in _list_tables(client, app_id, STATS_CODE_MLS, search_word=word):
+    for word in WAGE_SEARCH_WORDS:
+        got = _list_tables(client, app_id, STATS_CODE_MLS, search_word=word)
+        print(f"  search '{word}': {len(got)} tables")
+        for t in got:
             seen.setdefault(str(t.get("@id")), t)
     print(f"  unique candidates: {len(seen)}")
 
-    ids: list[str] = []
     rows = []
     for tid, t in seen.items():
         if "月" not in _text(t.get("CYCLE")):
             continue
         axis, n, first, last = _time_span(client, app_id, tid)
-        rows.append((tid, _describe(t)[1], axis, n, first, last))
-    # 直近(2020年代)まで伸びるものを上に。
-    rows.sort(key=lambda r: (("202" in r[4] or "202" in r[5]), r[3]), reverse=True)
-    for tid, name, axis, n, first, last in rows[:15]:
+        end = _end_year(first, last)
+        rows.append((end, tid, _describe(t)[1], axis, n, first, last))
+
+    current = [r for r in rows if r[0] >= 2016]
+    stale = [r for r in rows if r[0] < 2016]
+    # 現行表（末尾>=2016）を末尾年の新しい順・件数の多い順に。
+    current.sort(key=lambda r: (r[0], r[4]), reverse=True)
+    stale.sort(key=lambda r: (r[0], r[4]), reverse=True)
+
+    print(f"\n  >>> 現行表候補（末尾>=2016）: {len(current)} 件")
+    if not current:
+        print("  （2016年以降まで伸びる月次表は見つからず。stale 一覧を参照。）")
+    ids: list[str] = []
+    for end, tid, name, axis, n, first, last in current[:15]:
         ids.append(tid)
-        print(f"  - statsDataId={tid} | {name}")
+        print(f"  - statsDataId={tid} endYear={end} | {name}")
         print(f"      time軸='{axis}' n={n} span[{first} .. {last}]")
-    return ids
+
+    print(f"\n  --- 参考: 末尾<2016 の表（凍結長期系列など）: {len(stale)} 件 上位10")
+    for end, tid, name, axis, n, first, last in stale[:10]:
+        print(f"  - statsDataId={tid} endYear={end} | {name}")
+        print(f"      time軸='{axis}' n={n} span[{first} .. {last}]")
+
+    # 現行表が見つからなければ stale 上位を検査対象に回す（軸コード確認用）。
+    return ids if ids else [r[1] for r in stale[:3]]
 
 
 def main() -> int:
