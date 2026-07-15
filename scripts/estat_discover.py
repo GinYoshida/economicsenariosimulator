@@ -220,36 +220,44 @@ def explore_wage(client: httpx.Client, app_id: str) -> list[str]:
             seen.setdefault(str(t.get("@id")), t)
     print(f"  unique candidates: {len(seen)}")
 
-    rows = []
+    # まず getStatsList の SURVEY_DATE（データ対象期間）で末尾年を安価に評価する。
+    # CYCLE では絞らない（現行表は CYCLE 表記が異なる場合がある）。
+    by_survey = []
     for tid, t in seen.items():
-        if "月" not in _text(t.get("CYCLE")):
-            continue
-        axis, n, first, last = _time_span(client, app_id, tid)
-        end = _end_year(first, last)
-        rows.append((end, tid, _describe(t)[1], axis, n, first, last))
+        tid_s, name, cycle, survey = _describe(t)
+        end = _end_year(survey)
+        by_survey.append((end, tid_s, name, cycle, survey))
+    by_survey.sort(key=lambda r: r[0], reverse=True)
 
-    current = [r for r in rows if r[0] >= 2016]
-    stale = [r for r in rows if r[0] < 2016]
-    # 現行表（末尾>=2016）を末尾年の新しい順・件数の多い順に。
-    current.sort(key=lambda r: (r[0], r[4]), reverse=True)
-    stale.sort(key=lambda r: (r[0], r[4]), reverse=True)
+    survey_current = [r for r in by_survey if r[0] >= 2016]
+    print(f"\n  >>> SURVEY_DATE で末尾>=2016 の表: {len(survey_current)} 件（上位20を time軸で確認）")
+    if not survey_current:
+        print("  （SURVEY_DATE ベースでも 2016 以降の表は皆無 = この統計コードに現行月次はなし）")
 
-    print(f"\n  >>> 現行表候補（末尾>=2016）: {len(current)} 件")
-    if not current:
-        print("  （2016年以降まで伸びる月次表は見つからず。stale 一覧を参照。）")
+    # SURVEY_DATE で新しい上位のみ getMetaInfo して time 軸の実スパンを確定する。
     ids: list[str] = []
-    for end, tid, name, axis, n, first, last in current[:15]:
-        ids.append(tid)
-        print(f"  - statsDataId={tid} endYear={end} | {name}")
-        print(f"      time軸='{axis}' n={n} span[{first} .. {last}]")
+    confirmed = []
+    probe = survey_current[:20] if survey_current else by_survey[:20]
+    for end_s, tid, name, cycle, survey in probe:
+        axis, n, first, last = _time_span(client, app_id, tid)
+        end_t = _end_year(first, last)
+        confirmed.append((end_t, tid, name, cycle, survey, axis, n, first, last))
 
-    print(f"\n  --- 参考: 末尾<2016 の表（凍結長期系列など）: {len(stale)} 件 上位10")
-    for end, tid, name, axis, n, first, last in stale[:10]:
-        print(f"  - statsDataId={tid} endYear={end} | {name}")
-        print(f"      time軸='{axis}' n={n} span[{first} .. {last}]")
+    confirmed.sort(key=lambda r: (r[0], r[6]), reverse=True)
+    current = [r for r in confirmed if r[0] >= 2016]
+    print(f"\n  >>> time軸で末尾>=2016 を確認できた表: {len(current)} 件")
+    if not current:
+        print("  （time軸ベースでも 2016 以降まで伸びる表は確認できず）")
+    for end_t, tid, name, cycle, survey, axis, n, first, last in confirmed[:20]:
+        flag = "★現行" if end_t >= 2016 else "  凍結"
+        if end_t >= 2016:
+            ids.append(tid)
+        print(f"  {flag} statsDataId={tid} endYear={end_t} survey={survey} cycle={cycle}")
+        print(f"        {name}")
+        print(f"        time軸='{axis}' n={n} span[{first} .. {last}]")
 
-    # 現行表が見つからなければ stale 上位を検査対象に回す（軸コード確認用）。
-    return ids if ids else [r[1] for r in stale[:3]]
+    # 現行表が見つからなければ、軸コード確認用に上位を検査対象へ。
+    return ids if ids else [r[1] for r in confirmed[:3]]
 
 
 def main() -> int:
