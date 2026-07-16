@@ -183,6 +183,50 @@ WAGE_SEARCH_WORDS = [
 ]
 
 
+def _list_all_tables(client: httpx.Client, app_id: str, stats_code: str) -> list[dict]:
+    """searchWord なしで statsCode 配下の全表をページングで取得する。
+
+    searchWord はインデックス未収録の表を隠すため、現行表の有無を最終判定するには
+    素の全件列挙が確実。NEXT_KEY で startPosition を送りながら全ページを集める。
+    """
+    out: list[dict] = []
+    start = None
+    for _ in range(30):  # 安全上限（30ページ×100=3000表）
+        params = {"appId": app_id, "statsCode": stats_code, "limit": "100"}
+        if start is not None:
+            params["startPosition"] = str(start)
+        res = _get(client, "getStatsList", params).get("GET_STATS_LIST", {})
+        status = res.get("RESULT", {}).get("STATUS")
+        if status not in (0, "0"):
+            print(f"  bare-list ERROR status={status}: {res.get('RESULT', {}).get('ERROR_MSG')}")
+            break
+        out.extend(_as_list(res.get("DATALIST_INF", {}).get("TABLE_INF")))
+        nxt = res.get("DATALIST_INF", {}).get("RESULT_INF", {}).get("NEXT_KEY")
+        if not nxt:
+            break
+        start = nxt
+    return out
+
+
+def _is_legacy_title(name: str) -> bool:
+    return any(m in name for m in ("長期時系列", "旧産業分類", "年報", "累積データ"))
+
+
+def _currentness(t: dict) -> int:
+    """現行表らしさのスコア（高いほど現行月次に近い）。"""
+    _, name, cycle, survey = _describe(t)
+    score = 0
+    if _end_year(survey) >= 2016:
+        score += 5
+    if _is_legacy_title(name):
+        score -= 4
+    if "月" in cycle:
+        score += 1
+    if any(w in name for w in ("現金給与", "実質賃金", "賃金指数", "きまって支給")):
+        score += 1
+    return score
+
+
 def _end_year(*names: str) -> int:
     """時間軸ラベル群から末尾の西暦4桁（2010〜2099）を拾う。無ければ 0。"""
     best = 0
@@ -218,6 +262,17 @@ def explore_wage(client: httpx.Client, app_id: str) -> list[str]:
         print(f"  search '{word}': {len(got)} tables")
         for t in got:
             seen.setdefault(str(t.get("@id")), t)
+    print(f"  searchWord unique: {len(seen)}")
+
+    # searchWord では現行表が隠れる場合があるため、素の全件列挙も併用する（最終判定）。
+    bare = _list_all_tables(client, app_id, STATS_CODE_MLS)
+    added = 0
+    for t in bare:
+        tid = str(t.get("@id"))
+        if tid not in seen:
+            added += 1
+        seen.setdefault(tid, t)
+    print(f"  bare-list total: {len(bare)} tables (+{added} new)")
     print(f"  unique candidates: {len(seen)}")
 
     # まず getStatsList の SURVEY_DATE（データ対象期間）で末尾年を安価に評価する。
@@ -234,11 +289,28 @@ def explore_wage(client: httpx.Client, app_id: str) -> list[str]:
     if not survey_current:
         print("  （SURVEY_DATE ベースでも 2016 以降の表は皆無 = この統計コードに現行月次はなし）")
 
-    # SURVEY_DATE で新しい上位のみ getMetaInfo して time 軸の実スパンを確定する。
+    # SURVEY_DATE が全表 0 の場合に備え、「現行らしさ」スコアでも probe 対象を選ぶ。
+    # （SURVEY_DATE 上位20）∪（currentness 上位30）を getMetaInfo で実スパン確認。
+    scored = sorted(seen.values(), key=_currentness, reverse=True)
+    print("\n  現行らしさスコア上位10（タイトル/周期ベース）:")
+    for t in scored[:10]:
+        tid_s, name, cycle, survey = _describe(t)
+        print(f"    score={_currentness(t)} id={tid_s} cycle={cycle} survey={survey} | {name[:60]}")
+
+    probe_ids: list[str] = []
+    for _, tid, *_rest in (survey_current[:20] if survey_current else by_survey[:20]):
+        if tid not in probe_ids:
+            probe_ids.append(tid)
+    for t in scored[:30]:
+        tid = str(t.get("@id"))
+        if tid not in probe_ids:
+            probe_ids.append(tid)
+
+    # 各 probe 表の time 軸の実スパンを確定する。
     ids: list[str] = []
     confirmed = []
-    probe = survey_current[:20] if survey_current else by_survey[:20]
-    for end_s, tid, name, cycle, survey in probe:
+    for tid in probe_ids:
+        _, name, cycle, survey = _describe(seen[tid])
         axis, n, first, last = _time_span(client, app_id, tid)
         end_t = _end_year(first, last)
         confirmed.append((end_t, tid, name, cycle, survey, axis, n, first, last))
