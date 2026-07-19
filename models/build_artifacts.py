@@ -75,9 +75,11 @@ DRIVER_LABELS: dict[str, str] = {
 
 # カテゴリ別の説明変数（列 -> ラグ月数）。公表の早い系列を優先。
 CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
+    # 実質賃金効果は「名目給与の係数」と「そのカテゴリCPIの係数」の差で表現する。
+    # 総合CPI(cpi.headline)は各カテゴリCPIと強く相関し係数を不安定化させたため
+    # ドライバーからは外す（データソースとしては保持）。
     "food": {
         "cpi.food": 1,
-        "cpi.headline": 1,
         "wage.cash_earnings": 2,   # 名目給与YoY（公表ラグ約5-6週→2か月ラグ）
         "cao.cci.attitude": 1,
         "cao.watcher.outlook": 1,
@@ -87,7 +89,6 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
     },
     "clothing": {
         "cpi.clothing": 1,
-        "cpi.headline": 1,
         "wage.cash_earnings": 2,
         "cao.cci.attitude": 1,
         "cao.watcher.outlook": 1,

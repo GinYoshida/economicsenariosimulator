@@ -136,8 +136,9 @@ export default function ModelExplanation({
           {"real_t = (1 + nominal_t) / (1 + cpi_t) − 1"}
         </MathBlock>
         <p className="mt-1 text-xs text-gray-600">
-          賃金は<strong>名目のまま</strong>投入し、CPI を別ドライバーに置くことで、実質賃金の効果を
-          「名目給与の係数」と「CPIの係数」の差として推定します（実質化を先に固定しない）。
+          賃金は<strong>名目のまま</strong>投入し、各カテゴリのCPIを別ドライバーに置くことで、
+          実質賃金の効果を「名目給与の係数」と「そのカテゴリCPIの係数」の差として推定します
+          （実質化を先に固定しない）。総合CPIはカテゴリCPIと強く相関するためドライバーには入れません。
         </p>
 
         <h3 className="mt-3 text-sm font-semibold">② 回帰（カテゴリ別 OLS）</h3>
