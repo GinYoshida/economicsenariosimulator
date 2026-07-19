@@ -3,7 +3,7 @@
     "series_id": "cpi.clothing",
     "name": "総務省 消費者物価指数",
     "url": "https://www.stat.go.jp/data/cpi/",
-    "retrieved_at": "2026-07-19T04:15:49.682351+00:00",
+    "retrieved_at": "2026-07-19T08:13:32.087774+00:00",
     "license": "政府統計（出典明示で利用可）",
     "unit": "index",
     "frequency": "monthly"
@@ -12,7 +12,7 @@
     "series_id": "cpi.food",
     "name": "総務省 消費者物価指数",
     "url": "https://www.stat.go.jp/data/cpi/",
-    "retrieved_at": "2026-07-19T04:15:48.350175+00:00",
+    "retrieved_at": "2026-07-19T08:13:30.800474+00:00",
     "license": "政府統計（出典明示で利用可）",
     "unit": "index",
     "frequency": "monthly"
@@ -21,7 +21,7 @@
     "series_id": "cpi.headline",
     "name": "総務省 消費者物価指数",
     "url": "https://www.stat.go.jp/data/cpi/",
-    "retrieved_at": "2026-07-19T04:15:50.862986+00:00",
+    "retrieved_at": "2026-07-19T08:13:33.292964+00:00",
     "license": "政府統計（出典明示で利用可）",
     "unit": "index",
     "frequency": "monthly"
@@ -30,7 +30,7 @@
     "series_id": "fut.cotton",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-19T04:15:53.580134+00:00",
+    "retrieved_at": "2026-07-19T08:13:35.964978+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "usd",
     "frequency": "monthly"
@@ -39,7 +39,7 @@
     "series_id": "fut.soybean",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-19T04:15:53.173516+00:00",
+    "retrieved_at": "2026-07-19T08:13:35.524369+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "usd",
     "frequency": "monthly"
@@ -48,7 +48,7 @@
     "series_id": "fut.sugar",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-19T04:15:53.373236+00:00",
+    "retrieved_at": "2026-07-19T08:13:35.744460+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "usd",
     "frequency": "monthly"
@@ -57,7 +57,7 @@
     "series_id": "fut.usdjpy",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-19T04:15:53.804776+00:00",
+    "retrieved_at": "2026-07-19T08:13:36.229172+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "jpy_per_usd",
     "frequency": "monthly"
@@ -66,7 +66,7 @@
     "series_id": "fut.wheat",
     "name": "Yahoo Finance (futures/FX)",
     "url": "https://finance.yahoo.com/",
-    "retrieved_at": "2026-07-19T04:15:52.968135+00:00",
+    "retrieved_at": "2026-07-19T08:13:35.303651+00:00",
     "license": "Yahoo Finance terms of use",
     "unit": "usd",
     "frequency": "monthly"
@@ -75,7 +75,7 @@
     "series_id": "household.clothing.real_yoy",
     "name": "総務省 家計調査",
     "url": "https://www.stat.go.jp/data/kakei/sokuhou/tsuki/index.html",
-    "retrieved_at": "2026-07-19T04:15:46.994155+00:00",
+    "retrieved_at": "2026-07-19T08:13:29.306690+00:00",
     "license": "政府統計（出典明示で利用可）",
     "unit": "yoy_pct",
     "frequency": "monthly"
@@ -84,7 +84,7 @@
     "series_id": "household.food.real_yoy",
     "name": "総務省 家計調査",
     "url": "https://www.stat.go.jp/data/kakei/sokuhou/tsuki/index.html",
-    "retrieved_at": "2026-07-19T04:15:45.885795+00:00",
+    "retrieved_at": "2026-07-19T08:13:28.216317+00:00",
     "license": "政府統計（出典明示で利用可）",
     "unit": "yoy_pct",
     "frequency": "monthly"
@@ -93,7 +93,7 @@
     "series_id": "wage.cash_earnings",
     "name": "厚生労働省 毎月勤労統計調査（統計ダッシュボード）",
     "url": "https://dashboard.e-stat.go.jp/",
-    "retrieved_at": "2026-07-19T04:15:51.815941+00:00",
+    "retrieved_at": "2026-07-19T08:13:34.203354+00:00",
     "license": "統計ダッシュボード（政府統計・出典明示で利用可）",
     "unit": "yen",
     "frequency": "monthly"
