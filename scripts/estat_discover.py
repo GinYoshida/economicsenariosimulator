@@ -483,8 +483,8 @@ def explore_estat_sentiment(client: httpx.Client, app_id: str) -> None:
         print("  ESTAT_APP_ID 未設定のためスキップ")
         return
     words = [
-        "消費動向調査 消費者態度指数",
-        "消費動向調査 二人以上の世帯",
+        "消費者態度指数",          # 単語検索（AND を外して広く）
+        "消費動向調査",
         "景気ウォッチャー調査 現状判断",
         "景気ウォッチャー調査 先行き判断",
     ]
@@ -506,9 +506,20 @@ def explore_estat_sentiment(client: httpx.Client, app_id: str) -> None:
 
     # 直近まで伸びる上位を time 軸で確認。
     print("\n  -- 上位候補の time軸確認 --")
-    for end, tid, name, cycle, survey in rows[:8]:
+    for end, tid, name, cycle, survey in rows[:12]:
         axis, n, first, last = _time_span(client, app_id, tid)
         print(f"  == id={tid} time軸='{axis}' n={n} span[{first} .. {last}] | {name[:50]}")
+
+    # 確定済みの景気ウォッチャー本命表（現状＋先行き, 2001-2026 月次）の軸コードを確認。
+    # 消費者態度指数の候補が出ていればそれも inspect する。
+    inspect_ids = ["0003348427"]
+    for end, tid, name, cycle, survey in rows:
+        if "態度指数" in name and tid not in inspect_ids:
+            inspect_ids.append(tid)
+            break
+    for sid in inspect_ids:
+        inspect_table(client, app_id, sid,
+                      cat_hints=["現状", "先行き", "方向性", "水準", "家計", "態度", "二人以上", "総世帯"])
 
 
 def main() -> int:
