@@ -11,7 +11,7 @@ BOJ の ``series_code`` は M1-4、内閣府の ``dataset`` は M1-5 で最終�
 
 from pydantic import BaseModel
 
-KNOWN_CONNECTORS: set[str] = {"estat", "boj", "cao", "futures"}
+KNOWN_CONNECTORS: set[str] = {"estat", "boj", "cao", "futures", "dashboard"}
 
 
 class SourceSpec(BaseModel):
@@ -27,12 +27,14 @@ class SourceSpec(BaseModel):
 
 _ESTAT_URL_KAKEI = "https://www.stat.go.jp/data/kakei/sokuhou/tsuki/index.html"
 _ESTAT_URL_CPI = "https://www.stat.go.jp/data/cpi/"
+_DASH_URL = "https://dashboard.e-stat.go.jp/"
 _BOJ_URL = "https://www.stat-search.boj.or.jp/"
 _CAO_CCI_URL = "https://www.esri.cao.go.jp/jp/stat/shouhi/shouhi.html"
 _CAO_WATCHER_URL = "https://www5.cao.go.jp/keizai3/watcher/watcher_menu.html"
 _FUT_URL = "https://finance.yahoo.com/"
 
 _ESTAT_LICENSE = "政府統計（出典明示で利用可）"
+_DASH_LICENSE = "統計ダッシュボード（政府統計・出典明示で利用可）"
 _BOJ_LICENSE = "日本銀行（出典明示で利用可）"
 _CAO_LICENSE = "内閣府（出典明示で利用可）"
 _FUT_LICENSE = "Yahoo Finance terms of use"
@@ -120,6 +122,40 @@ _SPECS: list[SourceSpec] = [
                 "cdTab": "1",         # 指数
             },
         },
+    ),
+    _spec(
+        series_id="cpi.headline",
+        name="総務省 消費者物価指数",
+        url=_ESTAT_URL_CPI,
+        connector="estat",
+        license=_ESTAT_LICENSE,
+        unit="index",
+        frequency="monthly",
+        fetch={
+            "search_word": "消費者物価指数 総合",
+            # 2020年基準消費者物価指数（全国・指数）総合。
+            "stats_data_id": "0003427113",
+            "extra_params": {
+                "cdCat01": "0001",    # 総合
+                "cdArea": "00000",    # 全国
+                "cdTab": "1",         # 指数
+            },
+        },
+    ),
+    # --- 統計ダッシュボード: 賃金（毎月勤労統計・現行月次） ---
+    # e-Stat getStatsData は現行月次の毎月勤労統計を持たない（2015で凍結）ため、
+    # 統計ダッシュボード API から現金給与総額（名目・水準）を取得する。
+    # 名目YoY と CPI を別々に回帰し、実質効果は係数から創発させる設計。
+    _spec(
+        series_id="wage.cash_earnings",
+        name="厚生労働省 毎月勤労統計調査（統計ダッシュボード）",
+        url=_DASH_URL,
+        connector="dashboard",
+        license=_DASH_LICENSE,
+        unit="yen",
+        frequency="monthly",
+        # 現金給与総額（就業形態計・規模5人以上）水準。月次 2012–現在。
+        fetch={"indicator_code": "0302020000000010000"},
     ),
     # --- BOJ: 金利・為替 ---
     _spec(

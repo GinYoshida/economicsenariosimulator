@@ -23,6 +23,8 @@ DEFAULT_YOY_SERIES: set[str] = {
     "household.clothing.real_yoy",
     "cpi.food",
     "cpi.clothing",
+    "cpi.headline",
+    "wage.cash_earnings",
     "fut.wheat",
     "fut.soybean",
     "fut.sugar",

@@ -19,7 +19,7 @@ from typing import Callable
 import duckdb
 import pandas as pd
 
-from etl.connectors import boj, estat, futures
+from etl.connectors import boj, dashboard, estat, futures
 from etl.provenance import Source
 from etl.registry import REGISTRY, SourceSpec
 from etl.store import init_db, write_series
@@ -59,6 +59,19 @@ def _fetch_boj(spec: SourceSpec, _app_id: str | None) -> tuple[pd.DataFrame, Sou
     )
 
 
+def _fetch_dashboard(spec: SourceSpec, _app_id: str | None) -> tuple[pd.DataFrame, Source]:
+    f = spec.fetch
+    return dashboard.fetch_dashboard(
+        indicator_code=f.get("indicator_code"),
+        series_id=spec.series_id,
+        name=spec.name,
+        url=spec.url,
+        license=spec.license,
+        unit=spec.unit,
+        frequency=spec.frequency,
+    )
+
+
 def _fetch_futures(spec: SourceSpec, _app_id: str | None) -> tuple[pd.DataFrame, Source]:
     f = spec.fetch
     return futures.fetch_futures(
@@ -76,6 +89,7 @@ DEFAULT_DISPATCHERS: dict[str, SeriesFetcher] = {
     "estat": _fetch_estat,
     "boj": _fetch_boj,
     "futures": _fetch_futures,
+    "dashboard": _fetch_dashboard,
 }
 
 

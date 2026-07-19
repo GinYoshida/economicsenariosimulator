@@ -1,0 +1,79 @@
+{
+  "GET_STATS": {
+    "RESULT": {
+      "status": "0",
+      "errorMsg": "正常に終了しました。",
+      "date": "Sun Jul 19 11:48:52 JST 2026"
+    },
+    "PARAMETER": {
+      "lang": "JP",
+      "indicatorCode": ["0302020000000010000"],
+      "regionCode": ["00000"]
+    },
+    "STATISTICAL_DATA": {
+      "RESULT_INF": {
+        "totalNumber": 6,
+        "fromNumber": 1,
+        "toNumber": 6
+      },
+      "DATA_INF": {
+        "DATA_OBJ": [
+          {
+            "VALUE": {
+              "@indicator": "0302020000000010000",
+              "@regionCode": "00000",
+              "@time": "20260100",
+              "@unit": "円",
+              "$": "289456"
+            }
+          },
+          {
+            "VALUE": {
+              "@indicator": "0302020000000010000",
+              "@regionCode": "00000",
+              "@time": "20260200",
+              "@unit": "円",
+              "$": "285120"
+            }
+          },
+          {
+            "VALUE": {
+              "@indicator": "0302020000000010000",
+              "@regionCode": "00000",
+              "@time": "20260300",
+              "@unit": "円",
+              "$": "301788"
+            }
+          },
+          {
+            "VALUE": {
+              "@indicator": "0302020000000010000",
+              "@regionCode": "00000",
+              "@time": "20260400",
+              "@unit": "円",
+              "$": "298034"
+            }
+          },
+          {
+            "VALUE": {
+              "@indicator": "0302020000000010000",
+              "@regionCode": "00000",
+              "@time": "20260500",
+              "@unit": "円",
+              "$": "-"
+            }
+          },
+          {
+            "VALUE": {
+              "@indicator": "0302020000000010000",
+              "@regionCode": "00000",
+              "@time": "20250000",
+              "@unit": "円",
+              "$": "3512000"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

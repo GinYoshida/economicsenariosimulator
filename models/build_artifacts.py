@@ -55,6 +55,8 @@ _Z = 1.96  # ~95% band
 DRIVER_LABELS: dict[str, str] = {
     "cpi.food": "食料価格(CPI)",
     "cpi.clothing": "被服価格(CPI)",
+    "cpi.headline": "物価総合(CPI)",
+    "wage.cash_earnings": "現金給与総額(名目)",
     "cao.cci.attitude": "消費者態度指数",
     "cao.cci.livelihood": "暮らし向きDI",
     "cao.cci.income": "収入の増え方DI",
@@ -75,6 +77,8 @@ DRIVER_LABELS: dict[str, str] = {
 CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
     "food": {
         "cpi.food": 1,
+        "cpi.headline": 1,
+        "wage.cash_earnings": 2,   # 名目給与YoY（公表ラグ約5-6週→2か月ラグ）
         "cao.cci.attitude": 1,
         "cao.watcher.outlook": 1,
         "fut.wheat": 2,
@@ -83,6 +87,8 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
     },
     "clothing": {
         "cpi.clothing": 1,
+        "cpi.headline": 1,
+        "wage.cash_earnings": 2,
         "cao.cci.attitude": 1,
         "cao.watcher.outlook": 1,
         "fut.cotton": 2,
