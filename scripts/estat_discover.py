@@ -462,22 +462,75 @@ def explore_dashboard_group(
         print(f"  == code={code} n={n} time[{first} .. {last}] | {name}")
 
 
+def _search_tables_global(client: httpx.Client, app_id: str, search_word: str,
+                          limit: str = "40") -> list[dict]:
+    """statsCode を指定せず searchWord のみで全統計を横断検索する。"""
+    params = {"appId": app_id, "searchWord": search_word, "limit": limit}
+    data = _get(client, "getStatsList", params)
+    res = data.get("GET_STATS_LIST", {})
+    status = res.get("RESULT", {}).get("STATUS")
+    if status not in (0, "0"):
+        print(f"  ERROR status={status}: {res.get('RESULT', {}).get('ERROR_MSG')}")
+        return []
+    return _as_list(res.get("DATALIST_INF", {}).get("TABLE_INF"))
+
+
+def explore_estat_sentiment(client: httpx.Client, app_id: str) -> None:
+    """e-Stat 本体で消費動向調査・景気ウォッチャーの現行表を探す。"""
+    print("\n" + "=" * 72)
+    print("e-Stat 横断検索（感情系: 消費動向調査・景気ウォッチャー）")
+    if not app_id:
+        print("  ESTAT_APP_ID 未設定のためスキップ")
+        return
+    words = [
+        "消費動向調査 消費者態度指数",
+        "消費動向調査 二人以上の世帯",
+        "景気ウォッチャー調査 現状判断",
+        "景気ウォッチャー調査 先行き判断",
+    ]
+    seen: dict[str, dict] = {}
+    for w in words:
+        got = _search_tables_global(client, app_id, w)
+        print(f"  search '{w}': {len(got)} tables")
+        for t in got:
+            seen.setdefault(str(t.get("@id")), t)
+    print(f"  unique candidates: {len(seen)}")
+
+    rows = []
+    for tid, t in seen.items():
+        tid_s, name, cycle, survey = _describe(t)
+        rows.append((_end_year(survey), tid_s, name, cycle, survey))
+    rows.sort(key=lambda r: r[0], reverse=True)
+    for end, tid, name, cycle, survey in rows[:25]:
+        print(f"  - id={tid} endYear={end} survey={survey} cycle={cycle} | {name[:70]}")
+
+    # 直近まで伸びる上位を time 軸で確認。
+    print("\n  -- 上位候補の time軸確認 --")
+    for end, tid, name, cycle, survey in rows[:8]:
+        axis, n, first, last = _time_span(client, app_id, tid)
+        print(f"  == id={tid} time軸='{axis}' n={n} span[{first} .. {last}] | {name[:50]}")
+
+
 def main() -> int:
-    os.environ.get("ESTAT_APP_ID", "")  # ダッシュボードでは未使用
+    app_id = os.environ.get("ESTAT_APP_ID", "").strip()
     try:
         with httpx.Client() as client:
-            print("統計ダッシュボード base=" + BASE_DASH)
+            # C-1: e-Stat 本体で感情系（消費動向調査・景気ウォッチャー）の現行表を探索。
+            explore_estat_sentiment(client, app_id)
+
+            # C-2: 統計ダッシュボードの診断（感情系が別名で載っていないか、語彙を確認）。
+            print("\n統計ダッシュボード base=" + BASE_DASH)
             pairs = _fetch_indicator_pairs(client)
             if pairs:
-                # C: 感情系ドライバー（消費動向調査＋景気ウォッチャー）の指標コード特定。
                 explore_dashboard_group(
                     client, pairs, DASH_SENTIMENT_KEYWORDS, "感情系ドライバー"
                 )
-                # 参考: 賃金は確定済み（0302020000000010000）。再確認したい場合のみ。
-                if os.environ.get("DASH_RERUN_WAGE") == "1":
-                    explore_dashboard_group(
-                        client, pairs, DASH_WAGE_KEYWORDS, "賃金系（再確認）"
-                    )
+                # 語彙診断: 広めの語で件数と名称サンプルを出す。
+                for kw in ["消費者態度", "景気ウォッチャー", "態度指数", "判断DI",
+                           "ウォッチャー", "消費動向"]:
+                    sample = [(c, n) for c, n, _ in pairs if kw in n][:5]
+                    print(f"  vocab '{kw}': {sum(1 for _, n, _ in pairs if kw in n)} 件"
+                          f" e.g. {[n for _, n in sample]}")
     except httpx.HTTPError as e:
         print(f"HTTP error: {e}", file=sys.stderr)
         return 1
