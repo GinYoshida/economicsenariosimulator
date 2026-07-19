@@ -116,8 +116,10 @@ export default function ForecastChart({
                 const isOff = key != null && off(String(key));
                 return (
                   <span
+                    title="クリックで表示/非表示"
                     style={{
-                      color: isOff ? "#bbb" : "#374151",
+                      color: isOff ? "#9ca3af" : "#111827",
+                      fontWeight: isOff ? 400 : 600,
                       textDecoration: isOff ? "line-through" : "none",
                       cursor: "pointer",
                     }}
