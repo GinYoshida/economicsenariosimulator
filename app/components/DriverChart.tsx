@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Area,
   CartesianGrid,
@@ -43,6 +44,21 @@ export default function DriverChart({
   });
   const lastHistory = [...rows].reverse().find((r) => r.kind === "history");
 
+  // 凡例クリックで系列の表示/非表示を切り替える。
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggle = (key?: string | number) => {
+    if (key == null) return;
+    const k = String(key);
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  };
+  const off = (key: string) => hidden.has(key);
+  const dot = { r: 2, strokeWidth: 0 };
+
   return (
     <section aria-label={`ドライバー予測 ${driver.driver}`} data-testid="driver-chart">
       <p className="mb-1 text-xs text-gray-500">
@@ -55,14 +71,32 @@ export default function DriverChart({
             <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
             <YAxis tick={{ fontSize: 10 }} />
             <Tooltip formatter={(v) => (v == null ? "—" : Number(v).toFixed(3))} />
-            <Legend wrapperStyle={{ fontSize: 10 }} />
-            <Area dataKey="band" name="予測帯" legendType="none" stroke="none" fill={COLOR.forecast} fillOpacity={0.15} connectNulls isAnimationActive={false} />
+            <Legend
+              wrapperStyle={{ fontSize: 10 }}
+              onClick={(o) => toggle((o as { dataKey?: string | number })?.dataKey)}
+              formatter={(value, entry) => {
+                const key = (entry as { dataKey?: string | number })?.dataKey;
+                const isOff = key != null && off(String(key));
+                return (
+                  <span
+                    style={{
+                      color: isOff ? "#bbb" : "#374151",
+                      textDecoration: isOff ? "line-through" : "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {value}
+                  </span>
+                );
+              }}
+            />
+            <Area dataKey="band" name="予測帯" legendType="none" hide={off("forecast")} stroke="none" fill={COLOR.forecast} fillOpacity={0.15} connectNulls isAnimationActive={false} />
             {lastHistory && (
               <ReferenceLine x={lastHistory.date} stroke="#888" strokeDasharray="4 4" label={{ value: "予測開始", fontSize: 10, position: "top" }} />
             )}
-            <Line type="monotone" dataKey="actual" name="実績" stroke={COLOR.actual} dot={false} connectNulls />
-            <Line type="monotone" dataKey="backcast" name="当てはめ" stroke={COLOR.backcast} strokeDasharray="4 2" strokeWidth={1} dot={false} connectNulls />
-            <Line type="monotone" dataKey="forecast" name="予測" stroke={COLOR.forecast} strokeWidth={2} dot={false} connectNulls />
+            <Line type="monotone" dataKey="actual" name="実績" hide={off("actual")} stroke={COLOR.actual} dot={dot} activeDot={{ r: 4 }} connectNulls />
+            <Line type="monotone" dataKey="backcast" name="当てはめ" hide={off("backcast")} stroke={COLOR.backcast} strokeDasharray="4 2" strokeWidth={1} dot={false} connectNulls />
+            <Line type="monotone" dataKey="forecast" name="予測" hide={off("forecast")} stroke={COLOR.forecast} strokeWidth={2} dot={dot} activeDot={{ r: 4 }} connectNulls />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

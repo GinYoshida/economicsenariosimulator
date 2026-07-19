@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Area,
   CartesianGrid,
@@ -78,6 +79,22 @@ export default function ForecastChart({
   const lastHistory = [...rows].reverse().find((r) => r.kind === "history");
   const boundary = lastHistory?.date;
 
+  // 凡例クリックで系列の表示/非表示を切り替える。
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggle = (key?: string | number) => {
+    if (key == null) return;
+    const k = String(key);
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  };
+  const off = (key: string) => hidden.has(key);
+  // データポイントを明示する小さな〇マーカー（色は線色に追従）。
+  const dot = { r: 2, strokeWidth: 0 };
+
   return (
     <section aria-label="消費前年比の予測" data-testid="forecast-chart">
       <div className="h-72 w-full">
@@ -91,21 +108,39 @@ export default function ForecastChart({
               tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
             />
             <Tooltip formatter={(v) => pct(v == null ? null : Number(v))} />
-            <Legend wrapperStyle={{ fontSize: 10 }} />
-            <Area dataKey="food_band" name="食料 帯" legendType="none" stroke="none" fill={COLOR.foodActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
-            <Area dataKey="clothing_band" name="衣料 帯" legendType="none" stroke="none" fill={COLOR.clothingActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
+            <Legend
+              wrapperStyle={{ fontSize: 10 }}
+              onClick={(o) => toggle((o as { dataKey?: string | number })?.dataKey)}
+              formatter={(value, entry) => {
+                const key = (entry as { dataKey?: string | number })?.dataKey;
+                const isOff = key != null && off(String(key));
+                return (
+                  <span
+                    style={{
+                      color: isOff ? "#bbb" : "#374151",
+                      textDecoration: isOff ? "line-through" : "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {value}
+                  </span>
+                );
+              }}
+            />
+            <Area dataKey="food_band" name="食料 帯" legendType="none" hide={off("foodForecast")} stroke="none" fill={COLOR.foodActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
+            <Area dataKey="clothing_band" name="衣料 帯" legendType="none" hide={off("clothingForecast")} stroke="none" fill={COLOR.clothingActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
             {boundary && (
               <ReferenceLine x={boundary} stroke="#888" strokeDasharray="4 4" label={{ value: "予測開始", fontSize: 10, position: "top" }} />
             )}
             {/* 実績 */}
-            <Line type="monotone" dataKey="foodActual" name="食料 実績" stroke={COLOR.foodActual} dot={false} connectNulls />
-            <Line type="monotone" dataKey="clothingActual" name="衣料 実績" stroke={COLOR.clothingActual} dot={false} connectNulls />
+            <Line type="monotone" dataKey="foodActual" name="食料 実績" hide={off("foodActual")} stroke={COLOR.foodActual} dot={dot} activeDot={{ r: 4 }} connectNulls />
+            <Line type="monotone" dataKey="clothingActual" name="衣料 実績" hide={off("clothingActual")} stroke={COLOR.clothingActual} dot={dot} activeDot={{ r: 4 }} connectNulls />
             {/* バックキャスト（当てはめ） */}
-            <Line type="monotone" dataKey="foodBackcast" name="食料 当てはめ" stroke={COLOR.backcast} strokeDasharray="4 2" strokeWidth={1} dot={false} connectNulls />
-            <Line type="monotone" dataKey="clothingBackcast" name="衣料 当てはめ" stroke={COLOR.backcast} strokeDasharray="4 2" strokeWidth={1} dot={false} connectNulls />
+            <Line type="monotone" dataKey="foodBackcast" name="食料 当てはめ" hide={off("foodBackcast")} stroke={COLOR.backcast} strokeDasharray="4 2" strokeWidth={1} dot={false} connectNulls />
+            <Line type="monotone" dataKey="clothingBackcast" name="衣料 当てはめ" hide={off("clothingBackcast")} stroke={COLOR.backcast} strokeDasharray="4 2" strokeWidth={1} dot={false} connectNulls />
             {/* フォーキャスト */}
-            <Line type="monotone" dataKey="foodForecast" name="食料 予測" stroke={COLOR.foodForecast} strokeWidth={2} dot={false} connectNulls />
-            <Line type="monotone" dataKey="clothingForecast" name="衣料 予測" stroke={COLOR.clothingForecast} strokeWidth={2} dot={false} connectNulls />
+            <Line type="monotone" dataKey="foodForecast" name="食料 予測" hide={off("foodForecast")} stroke={COLOR.foodForecast} strokeWidth={2} dot={dot} activeDot={{ r: 4 }} connectNulls />
+            <Line type="monotone" dataKey="clothingForecast" name="衣料 予測" hide={off("clothingForecast")} stroke={COLOR.clothingForecast} strokeWidth={2} dot={dot} activeDot={{ r: 4 }} connectNulls />
             {showMovingAverage && (
               <>
                 <Line type="monotone" dataKey="food_ma" name={`食料 ${maWindow}カ月平均`} legendType="none" stroke={COLOR.foodActual} strokeDasharray="5 3" strokeWidth={1} dot={false} connectNulls />
