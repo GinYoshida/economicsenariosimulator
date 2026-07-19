@@ -119,3 +119,4 @@ class DriverForecastFile(BaseModel):
     horizon: int       # 予測月数（例 12）
     z: float           # 信頼帯の係数（80%→1.2816）
     drivers: list[DriverForecast]
+    anchor: str | None = None  # 予測起点（後ろ向き検証では過去日、前向きは None）

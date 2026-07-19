@@ -78,6 +78,7 @@ export default function Dashboard({
   sources,
   series = null,
   driverForecasts = null,
+  driverForecastsHindcast = null,
 }: {
   coefficients: Coefficients;
   baseline: Baseline;
@@ -85,11 +86,20 @@ export default function Dashboard({
   sources: SourceMeta[];
   series?: SeriesFile | null;
   driverForecasts?: DriverForecastFile | null;
+  driverForecastsHindcast?: DriverForecastFile | null;
 }) {
   const categories = coefficients.categories;
   const lookup = useMemo(() => driverLookup(driverForecasts), [driverForecasts]);
   const horizon = driverForecasts?.horizon ?? 12;
   const z = driverForecasts?.z ?? 1.2816;
+
+  // 後ろ向き検証（アンカーを2年前に置いた予測コーン）。
+  const hindLookup = useMemo(
+    () => driverLookup(driverForecastsHindcast),
+    [driverForecastsHindcast],
+  );
+  const hindAnchor = driverForecastsHindcast?.anchor ?? null;
+  const hindHorizon = driverForecastsHindcast?.horizon ?? 24;
 
   const driverIds = useMemo(
     () =>
@@ -178,9 +188,36 @@ export default function Dashboard({
   const foodByDate = Object.fromEntries(foodFan.map((p) => [p.date, p]));
   const clothingByDate = Object.fromEntries(clothingFan.map((p) => [p.date, p]));
 
+  // 後ろ向き検証コーン（アンカーから先を base 仮定で予測。プリセット非依存）。
+  const noShift = () => 0;
+  const foodHind = hindAnchor
+    ? computeFanForecast(fanModels.food, hindLookup, {
+        lastTargetDate: hindAnchor,
+        horizon: hindHorizon,
+        z,
+        shift: noShift,
+        overrides: {},
+      })
+    : [];
+  const clothingHind = hindAnchor
+    ? computeFanForecast(fanModels.clothing, hindLookup, {
+        lastTargetDate: hindAnchor,
+        horizon: hindHorizon,
+        z,
+        shift: noShift,
+        overrides: {},
+      })
+    : [];
+  const foodHindByDate = Object.fromEntries(foodHind.map((p) => [p.date, p]));
+  const clothingHindByDate = Object.fromEntries(
+    clothingHind.map((p) => [p.date, p]),
+  );
+
   const allRows: ForecastRow[] = [];
   baseline.history.forEach((h, idx) => {
     const isLast = idx === baseline.history.length - 1;
+    const fh = foodHindByDate[h.date];
+    const ch = clothingHindByDate[h.date];
     allRows.push({
       date: h.date,
       kind: "history",
@@ -191,6 +228,13 @@ export default function Dashboard({
       // 実績と予測線をつなぐため最終実績点は予測にも置く
       foodForecast: isLast ? h.food_yoy : null,
       clothingForecast: isLast ? h.clothing_yoy : null,
+      // 後ろ向き検証コーン（過去2年）
+      foodHindcast: fh?.mean ?? null,
+      foodHindLow: fh?.low ?? null,
+      foodHindHigh: fh?.high ?? null,
+      clothingHindcast: ch?.mean ?? null,
+      clothingHindLow: ch?.low ?? null,
+      clothingHindHigh: ch?.high ?? null,
     });
   });
   for (let i = 0; i < horizon; i++) {
@@ -366,6 +410,9 @@ export default function Dashboard({
             塗りは{z === 1.96 ? 95 : 80}%信頼帯。実績＝実線／当てはめ＝灰破線／予測＝濃色。
             説明変数は状態空間モデルで1年先まで予測し、その不確実性を線形モデルへ伝播。
             スライダーで固定したドライバーは「確定値（帯なし）」として扱います。
+            <br />
+            <b>検証予測（点線・左2年）</b>＝2年前を起点に同じ手法で予測した帯。点はズレても
+            実績が帯内に収まるほど、モデルの不確実性見積りが妥当と読めます（凡例クリックで表示切替）。
           </p>
 
           <DriverSliders sliders={sliders} onChange={onSlider} />

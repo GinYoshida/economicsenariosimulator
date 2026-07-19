@@ -144,12 +144,22 @@ export type DriverForecastFile = {
   horizon: number;
   z: number;
   drivers: DriverForecast[];
+  anchor?: string | null; // 後ろ向き検証の予測起点（前向きは null）
 };
 
 /** driver_forecasts.json をロード。未生成なら null（フラット予測にフォールバック）。 */
 export async function loadDriverForecasts(): Promise<DriverForecastFile | null> {
   try {
     return await loadJson<DriverForecastFile>("driver_forecasts.json");
+  } catch {
+    return null;
+  }
+}
+
+/** driver_forecasts_hindcast.json（後ろ向き検証）をロード。未生成なら null。 */
+export async function loadDriverForecastsHindcast(): Promise<DriverForecastFile | null> {
+  try {
+    return await loadJson<DriverForecastFile>("driver_forecasts_hindcast.json");
   } catch {
     return null;
   }
