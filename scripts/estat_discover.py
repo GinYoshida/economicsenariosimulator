@@ -340,6 +340,18 @@ def explore_wage(client: httpx.Client, app_id: str) -> list[str]:
 # ---------------------------------------------------------------------------
 BASE_DASH = "https://dashboard.e-stat.go.jp/api/1.0/Json"
 DASH_WAGE_KEYWORDS = ["現金給与総額", "実質賃金", "きまって支給", "賃金指数", "所定内給与"]
+# 感情系ドライバー（内閣府 消費動向調査＋景気ウォッチャー調査）。
+DASH_SENTIMENT_KEYWORDS = [
+    "消費者態度指数",
+    "景気ウォッチャー",
+    "現状判断",
+    "先行き判断",
+    "暮らし向き",
+    "収入の増え方",
+    "雇用環境",
+    "耐久消費財の買い時判断",
+    "耐久財",
+]
 
 
 def _dget(client: httpx.Client, path: str, params: dict) -> dict:
@@ -385,12 +397,8 @@ def _first_last_times(data_json: dict) -> tuple[int, str, str]:
     return len(times), times[0], times[-1]
 
 
-def explore_dashboard_wage(client: httpx.Client) -> None:
-    """統計ダッシュボードから賃金系 IndicatorCode を特定し、期間を確認する。"""
-    print("\n" + "=" * 72)
-    print("統計ダッシュボード（賃金系指標の探索） base=" + BASE_DASH)
-
-    # getIndicatorInfo をまず無指定で取得（全指標メタ）。構造は再帰探索で吸収。
+def _fetch_indicator_pairs(client: httpx.Client) -> list[tuple[str, str, str]]:
+    """getIndicatorInfo を1回取得し、全 (code,name,cycle) を構造非依存で返す。"""
     meta = None
     for attempt_params in ({"Lang": "JP"}, {}):
         try:
@@ -400,47 +408,48 @@ def explore_dashboard_wage(client: httpx.Client) -> None:
             print(f"  getIndicatorInfo {attempt_params} HTTP error: {e}")
     if meta is None:
         print("  getIndicatorInfo 取得失敗")
-        return
-
-    # RESULT/STATUS とトップ構造を出す（想定外形状でも次に活かせるよう）。
+        return []
     top_keys = list(meta.keys())
-    print(f"  top-level keys: {top_keys}")
     root = meta.get(top_keys[0], {}) if top_keys else {}
-    result = root.get("RESULT") or root.get("result")
-    print(f"  RESULT: {result}")
-
+    print(f"  top-level keys: {top_keys}  RESULT: {root.get('RESULT') or root.get('result')}")
     pairs: list[tuple[str, str, str]] = []
     _walk_code_name(meta, pairs)
     print(f"  indicators found (code,name pairs): {len(pairs)}")
+    return pairs
 
-    # 賃金キーワードで絞り込み、重複コードを除去。
+
+def explore_dashboard_group(
+    client: httpx.Client,
+    pairs: list[tuple[str, str, str]],
+    keywords: list[str],
+    label: str,
+    *,
+    list_n: int = 60,
+    probe_n: int = 12,
+) -> None:
+    """キーワードで指標を絞り込み、上位を getData で期間確認する。"""
+    print("\n" + "=" * 72)
+    print(f"統計ダッシュボード（{label}） keywords={keywords}")
+
     seen_codes: set[str] = set()
-    wage_hits: list[tuple[str, str, str]] = []
+    hits: list[tuple[str, str, str]] = []
     for code, name, cyc in pairs:
         if code in seen_codes:
             continue
-        if any(k in name for k in DASH_WAGE_KEYWORDS):
+        if any(k in name for k in keywords):
             seen_codes.add(code)
-            wage_hits.append((code, name, cyc))
+            hits.append((code, name, cyc))
 
-    print(f"\n  >>> 賃金系 indicator: {len(wage_hits)} 件")
-    for code, name, cyc in wage_hits[:40]:
+    print(f"  >>> ヒット: {len(hits)} 件")
+    for code, name, cyc in hits[:list_n]:
         print(f"  - code={code} cycle={cyc} | {name}")
 
-    if not wage_hits:
-        # 想定外構造のときは生JSONの先頭を出して次回の手掛かりにする。
-        raw = str(meta)
-        print("  （賃金系ヒットなし。生JSON先頭2000字を出力）")
-        print(raw[:2000])
-        return
-
-    # 上位数件について getData を叩き、時間範囲（2026まで伸びるか）を確認。
-    for code, name, cyc in wage_hits[:6]:
+    # 上位について getData を叩き、時間範囲（直近まで伸びるか）を確認。
+    for code, name, cyc in hits[:probe_n]:
         got = None
         for params in (
             {"Lang": "JP", "IndicatorCode": code, "RegionCode": "00000"},
             {"Lang": "JP", "IndicatorCode": code},
-            {"IndicatorCode": code},
         ):
             try:
                 got = _dget(client, "getData", params)
@@ -450,21 +459,25 @@ def explore_dashboard_wage(client: httpx.Client) -> None:
         if got is None:
             continue
         n, first, last = _first_last_times(got)
-        print(f"  == code={code} | {name}")
-        print(f"       getData: n={n} time[{first} .. {last}]")
+        print(f"  == code={code} n={n} time[{first} .. {last}] | {name}")
 
 
 def main() -> int:
-    app_id = os.environ.get("ESTAT_APP_ID", "").strip()  # ダッシュボードでは未使用
+    os.environ.get("ESTAT_APP_ID", "")  # ダッシュボードでは未使用
     try:
         with httpx.Client() as client:
-            # 現行月次の賃金は統計ダッシュボードから取得する（e-Stat DB は凍結）。
-            explore_dashboard_wage(client)
-            # 参考: e-Stat の毎月勤労統計は全表凍結（2015以前）を確認済み。
-            if app_id and os.environ.get("ESTAT_RERUN_WAGE") == "1":
-                wage_ids = explore_wage(client, app_id)
-                for sid in wage_ids[:3]:
-                    inspect_table(client, app_id, sid, cat_hints=WAGE_HINTS)
+            print("統計ダッシュボード base=" + BASE_DASH)
+            pairs = _fetch_indicator_pairs(client)
+            if pairs:
+                # C: 感情系ドライバー（消費動向調査＋景気ウォッチャー）の指標コード特定。
+                explore_dashboard_group(
+                    client, pairs, DASH_SENTIMENT_KEYWORDS, "感情系ドライバー"
+                )
+                # 参考: 賃金は確定済み（0302020000000010000）。再確認したい場合のみ。
+                if os.environ.get("DASH_RERUN_WAGE") == "1":
+                    explore_dashboard_group(
+                        client, pairs, DASH_WAGE_KEYWORDS, "賃金系（再確認）"
+                    )
     except httpx.HTTPError as e:
         print(f"HTTP error: {e}", file=sys.stderr)
         return 1
