@@ -88,7 +88,7 @@ export default function ModelExplanation({
           <FlowBox tone="src">
             公的統計API
             <span className="block text-[10px] font-normal text-gray-500">
-              e-Stat（家計調査・CPI）／統計ダッシュボード（毎月勤労統計・賃金）／
+              e-Stat（家計調査・CPI・景気ウォッチャー）／統計ダッシュボード（毎月勤労統計・賃金）／
               Yahoo Finance（先物・為替）
             </span>
           </FlowBox>

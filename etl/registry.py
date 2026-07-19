@@ -231,26 +231,49 @@ _SPECS: list[SourceSpec] = [
         frequency="monthly",
         fetch={"dataset": "cci_durable_goods"},  # M1-5 で確定
     ),
-    # --- 内閣府: 景気ウォッチャー調査 ---
+    # --- 内閣府: 景気ウォッチャー調査（e-Stat DB・現行月次 2001-現在） ---
+    # 表 0003348427「現状判断と先行き判断」。DI(全国・合計・方向性)を抽出。
+    #   tab=140 DI / cat01=100 合計 / cat02=100 現状(方向性)・110 先行き(方向性)
+    #   cat03=100 合計 / area=00000 全国
     _spec(
         series_id="cao.watcher.current",
         name="内閣府 景気ウォッチャー調査",
         url=_CAO_WATCHER_URL,
-        connector="cao",
+        connector="estat",
         license=_CAO_LICENSE,
         unit="di",
         frequency="monthly",
-        fetch={"dataset": "watcher_current_di"},  # M1-5 で確定
+        fetch={
+            "search_word": "景気ウォッチャー調査 現状判断と先行き判断",
+            "stats_data_id": "0003348427",
+            "extra_params": {
+                "cdTab": "140",      # DI
+                "cdCat01": "100",    # 合計
+                "cdCat02": "100",    # 景気の現状判断（方向性）
+                "cdCat03": "100",    # 分野: 合計
+                "cdArea": "00000",   # 全国
+            },
+        },
     ),
     _spec(
         series_id="cao.watcher.outlook",
         name="内閣府 景気ウォッチャー調査",
         url=_CAO_WATCHER_URL,
-        connector="cao",
+        connector="estat",
         license=_CAO_LICENSE,
         unit="di",
         frequency="monthly",
-        fetch={"dataset": "watcher_outlook_di"},  # M1-5 で確定
+        fetch={
+            "search_word": "景気ウォッチャー調査 現状判断と先行き判断",
+            "stats_data_id": "0003348427",
+            "extra_params": {
+                "cdTab": "140",      # DI
+                "cdCat01": "100",    # 合計
+                "cdCat02": "110",    # 景気の先行き判断（方向性）
+                "cdCat03": "100",    # 分野: 合計
+                "cdArea": "00000",   # 全国
+            },
+        },
     ),
     # --- 先物 / FX (Yahoo Finance) ---
     _spec(

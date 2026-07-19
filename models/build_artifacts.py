@@ -81,7 +81,8 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
     "food": {
         "cpi.food": 1,
         "wage.cash_earnings": 2,   # 名目給与YoY（公表ラグ約5-6週→2か月ラグ）
-        "cao.cci.attitude": 1,
+        "cao.cci.attitude": 1,     # 消費者態度指数（現状 e-Stat未収録→取得時のみ）
+        "cao.watcher.current": 1,  # 景気ウォッチャー現状DI（翌月上旬公表→1か月ラグ）
         "cao.watcher.outlook": 1,
         "fut.wheat": 2,
         "fut.soybean": 2,
@@ -91,6 +92,7 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
         "cpi.clothing": 1,
         "wage.cash_earnings": 2,
         "cao.cci.attitude": 1,
+        "cao.watcher.current": 1,
         "cao.watcher.outlook": 1,
         "fut.cotton": 2,
         "boj.usdjpy": 1,
