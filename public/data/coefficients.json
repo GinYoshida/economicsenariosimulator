@@ -1,53 +1,77 @@
 {
-  "generated_at": "2026-07-12T14:25:34.639613+00:00",
+  "generated_at": "2026-07-19T04:15:57.257280+00:00",
   "categories": [
     {
       "category": "food",
-      "intercept": -0.0011210624485375803,
+      "intercept": 0.007946528977049163,
       "drivers": [
         {
           "driver": "cpi.food",
           "label_ja": "食料価格(CPI)",
-          "coef": -0.28493551100737513,
+          "coef": -0.39272295135367175,
           "lag_months": 1
+        },
+        {
+          "driver": "cpi.headline",
+          "label_ja": "物価総合(CPI)",
+          "coef": -0.18355787572421456,
+          "lag_months": 1
+        },
+        {
+          "driver": "wage.cash_earnings",
+          "label_ja": "現金給与総額(名目)",
+          "coef": 0.0940207383292523,
+          "lag_months": 2
         },
         {
           "driver": "fut.wheat",
           "label_ja": "小麦先物",
-          "coef": 0.0006861008268503639,
+          "coef": -0.008240150135756892,
           "lag_months": 2
         },
         {
           "driver": "fut.soybean",
           "label_ja": "大豆先物",
-          "coef": -0.010575673914567381,
+          "coef": -0.021084366431663615,
           "lag_months": 2
         }
       ],
-      "r2": 0.23534614583001268,
-      "resid_std": 0.012892684874562601,
+      "r2": 0.44345934425713773,
+      "resid_std": 0.012399381913954672,
       "model_version": "v1",
       "data_vintage": "2026-07-01"
     },
     {
       "category": "clothing",
-      "intercept": -0.02108875171162403,
+      "intercept": -0.0314021523469718,
       "drivers": [
         {
           "driver": "cpi.clothing",
           "label_ja": "被服価格(CPI)",
-          "coef": -0.034973729630096075,
+          "coef": -2.80275064186139,
           "lag_months": 1
+        },
+        {
+          "driver": "cpi.headline",
+          "label_ja": "物価総合(CPI)",
+          "coef": 2.712831681329396,
+          "lag_months": 1
+        },
+        {
+          "driver": "wage.cash_earnings",
+          "label_ja": "現金給与総額(名目)",
+          "coef": 0.5831026645540474,
+          "lag_months": 2
         },
         {
           "driver": "fut.cotton",
           "label_ja": "綿先物",
-          "coef": 0.012437559622809999,
+          "coef": 0.033406143163896694,
           "lag_months": 2
         }
       ],
-      "r2": 0.00883024180562364,
-      "resid_std": 0.05236561200502495,
+      "r2": 0.3020688504337732,
+      "resid_std": 0.053661307556534706,
       "model_version": "v1",
       "data_vintage": "2026-07-01"
     }
