@@ -29,13 +29,11 @@ export type ForecastRow = {
   clothingForecast?: number | null;
   clothingLow?: number | null;
   clothingHigh?: number | null;
-  // 後ろ向き検証コーン（過去2年）
-  foodHindcast?: number | null;
-  foodHindLow?: number | null;
-  foodHindHigh?: number | null;
-  clothingHindcast?: number | null;
-  clothingHindLow?: number | null;
-  clothingHindHigh?: number | null;
+  // 12か月先予測の帯（当てはめ中心・一定幅）を全期間に敷く
+  foodBandLow?: number | null;
+  foodBandHigh?: number | null;
+  clothingBandLow?: number | null;
+  clothingBandHigh?: number | null;
 };
 
 type AxisBound = number | "auto";
@@ -81,11 +79,13 @@ export default function ForecastChart({
     clothing_ma: maClothing[i],
     food_band: band(r.foodLow, r.foodHigh),
     clothing_band: band(r.clothingLow, r.clothingHigh),
-    food_hind_band: band(r.foodHindLow, r.foodHindHigh),
-    clothing_hind_band: band(r.clothingHindLow, r.clothingHindHigh),
+    food_fc_band: band(r.foodBandLow, r.foodBandHigh),
+    clothing_fc_band: band(r.clothingBandLow, r.clothingBandHigh),
   }));
 
-  const hasHindcast = rows.some((r) => r.foodHindcast != null || r.clothingHindcast != null);
+  const hasFcBand = rows.some(
+    (r) => r.foodBandLow != null || r.clothingBandLow != null,
+  );
 
   const lastHistory = [...rows].reverse().find((r) => r.kind === "history");
   const boundary = lastHistory?.date;
@@ -141,20 +141,17 @@ export default function ForecastChart({
                 );
               }}
             />
-            {/* 後ろ向き検証コーン（過去2年）: 帯＋点線の平均 */}
-            <Area dataKey="food_hind_band" name="食料 検証帯" legendType="none" hide={off("foodHindcast")} stroke="none" fill={COLOR.foodForecast} fillOpacity={0.1} connectNulls isAnimationActive={false} />
-            <Area dataKey="clothing_hind_band" name="衣料 検証帯" legendType="none" hide={off("clothingHindcast")} stroke="none" fill={COLOR.clothingForecast} fillOpacity={0.1} connectNulls isAnimationActive={false} />
+            {/* 12か月先予測の帯（当てはめ中心・一定幅）を全期間に連続表示 */}
+            {hasFcBand && (
+              <>
+                <Area dataKey="food_fc_band" name="食料 12M予測帯" hide={off("food_fc_band")} legendType="rect" stroke="none" fill={COLOR.foodForecast} fillOpacity={0.1} connectNulls isAnimationActive={false} />
+                <Area dataKey="clothing_fc_band" name="衣料 12M予測帯" hide={off("clothing_fc_band")} legendType="rect" stroke="none" fill={COLOR.clothingForecast} fillOpacity={0.1} connectNulls isAnimationActive={false} />
+              </>
+            )}
             <Area dataKey="food_band" name="食料 帯" legendType="none" hide={off("foodForecast")} stroke="none" fill={COLOR.foodActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
             <Area dataKey="clothing_band" name="衣料 帯" legendType="none" hide={off("clothingForecast")} stroke="none" fill={COLOR.clothingActual} fillOpacity={0.15} connectNulls isAnimationActive={false} />
             {boundary && (
               <ReferenceLine x={boundary} stroke="#888" strokeDasharray="4 4" label={{ value: "予測開始", fontSize: 10, position: "top" }} />
-            )}
-            {/* 検証予測の平均（点線） */}
-            {hasHindcast && (
-              <>
-                <Line type="monotone" dataKey="foodHindcast" name="食料 検証予測" hide={off("foodHindcast")} stroke={COLOR.foodForecast} strokeDasharray="5 3" strokeWidth={1.5} dot={false} connectNulls />
-                <Line type="monotone" dataKey="clothingHindcast" name="衣料 検証予測" hide={off("clothingHindcast")} stroke={COLOR.clothingForecast} strokeDasharray="5 3" strokeWidth={1.5} dot={false} connectNulls />
-              </>
             )}
             {/* 実績 */}
             <Line type="monotone" dataKey="foodActual" name="食料 実績" hide={off("foodActual")} stroke={COLOR.foodActual} dot={dot} activeDot={{ r: 4 }} connectNulls />

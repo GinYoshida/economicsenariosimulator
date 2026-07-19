@@ -78,7 +78,6 @@ export default function Dashboard({
   sources,
   series = null,
   driverForecasts = null,
-  driverForecastsHindcast = null,
 }: {
   coefficients: Coefficients;
   baseline: Baseline;
@@ -86,20 +85,11 @@ export default function Dashboard({
   sources: SourceMeta[];
   series?: SeriesFile | null;
   driverForecasts?: DriverForecastFile | null;
-  driverForecastsHindcast?: DriverForecastFile | null;
 }) {
   const categories = coefficients.categories;
   const lookup = useMemo(() => driverLookup(driverForecasts), [driverForecasts]);
   const horizon = driverForecasts?.horizon ?? 12;
   const z = driverForecasts?.z ?? 1.2816;
-
-  // 後ろ向き検証（アンカーを2年前に置いた予測コーン）。
-  const hindLookup = useMemo(
-    () => driverLookup(driverForecastsHindcast),
-    [driverForecastsHindcast],
-  );
-  const hindAnchor = driverForecastsHindcast?.anchor ?? null;
-  const hindHorizon = driverForecastsHindcast?.horizon ?? 24;
 
   const driverIds = useMemo(
     () =>
@@ -188,36 +178,18 @@ export default function Dashboard({
   const foodByDate = Object.fromEntries(foodFan.map((p) => [p.date, p]));
   const clothingByDate = Object.fromEntries(clothingFan.map((p) => [p.date, p]));
 
-  // 後ろ向き検証コーン（アンカーから先を base 仮定で予測。プリセット非依存）。
-  const noShift = () => 0;
-  const foodHind = hindAnchor
-    ? computeFanForecast(fanModels.food, hindLookup, {
-        lastTargetDate: hindAnchor,
-        horizon: hindHorizon,
-        z,
-        shift: noShift,
-        overrides: {},
-      })
-    : [];
-  const clothingHind = hindAnchor
-    ? computeFanForecast(fanModels.clothing, hindLookup, {
-        lastTargetDate: hindAnchor,
-        horizon: hindHorizon,
-        z,
-        shift: noShift,
-        overrides: {},
-      })
-    : [];
-  const foodHindByDate = Object.fromEntries(foodHind.map((p) => [p.date, p]));
-  const clothingHindByDate = Object.fromEntries(
-    clothingHind.map((p) => [p.date, p]),
-  );
+  // 「12か月先予測の帯」を全期間に連続表示する。各月の当てはめ（モデル中心値）に、
+  // 前方12か月予測と同じ幅の80%帯（水平に一定幅）を敷き、実績が帯に収まるかを見る。
+  const bandHalf = (fan: { low: number; high: number }[]) =>
+    fan.length ? (fan[fan.length - 1].high - fan[fan.length - 1].low) / 2 : 0;
+  const halfFood = bandHalf(foodFan);
+  const halfClothing = bandHalf(clothingFan);
 
   const allRows: ForecastRow[] = [];
   baseline.history.forEach((h, idx) => {
     const isLast = idx === baseline.history.length - 1;
-    const fh = foodHindByDate[h.date];
-    const ch = clothingHindByDate[h.date];
+    const fFit = h.food_fit ?? null;
+    const cFit = h.clothing_fit ?? null;
     allRows.push({
       date: h.date,
       kind: "history",
@@ -228,13 +200,11 @@ export default function Dashboard({
       // 実績と予測線をつなぐため最終実績点は予測にも置く
       foodForecast: isLast ? h.food_yoy : null,
       clothingForecast: isLast ? h.clothing_yoy : null,
-      // 後ろ向き検証コーン（過去2年）
-      foodHindcast: fh?.mean ?? null,
-      foodHindLow: fh?.low ?? null,
-      foodHindHigh: fh?.high ?? null,
-      clothingHindcast: ch?.mean ?? null,
-      clothingHindLow: ch?.low ?? null,
-      clothingHindHigh: ch?.high ?? null,
+      // 12か月先予測の帯（当てはめ中心・一定幅）を全期間に敷く
+      foodBandLow: fFit != null ? fFit - halfFood : null,
+      foodBandHigh: fFit != null ? fFit + halfFood : null,
+      clothingBandLow: cFit != null ? cFit - halfClothing : null,
+      clothingBandHigh: cFit != null ? cFit + halfClothing : null,
     });
   });
   for (let i = 0; i < horizon; i++) {
@@ -411,8 +381,9 @@ export default function Dashboard({
             説明変数は状態空間モデルで1年先まで予測し、その不確実性を線形モデルへ伝播。
             スライダーで固定したドライバーは「確定値（帯なし）」として扱います。
             <br />
-            <b>検証予測（点線・左2年）</b>＝2年前を起点に同じ手法で予測した帯。点はズレても
-            実績が帯内に収まるほど、モデルの不確実性見積りが妥当と読めます（凡例クリックで表示切替）。
+            <b>12M予測帯</b>＝各月の当てはめ（モデル中心値）に、12か月先予測と同じ幅の帯を全期間へ
+            連続で敷いたもの。実績がこの帯に収まる割合で、不確実性の見積りが妥当かを一目で確認できます
+            （凡例クリックで表示切替）。
           </p>
 
           <DriverSliders sliders={sliders} onChange={onSlider} />

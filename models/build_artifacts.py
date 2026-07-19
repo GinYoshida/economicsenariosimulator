@@ -45,7 +45,6 @@ BACKTEST_HORIZON = 3
 BACKTEST_MIN_TRAIN = 24
 SERIES_TAIL = 120  # series.json に載せる直近月数（約10年）
 FORECAST_HORIZON = 12  # ドライバー予測・ファンチャートのホライズン（1年）
-HINDCAST_MONTHS = 24   # 後ろ向き検証: アンカーを何か月前に置くか（2年）
 FORECAST_Z = 1.2816  # 80% 信頼帯
 
 MODEL_VERSION = "v1"
@@ -328,36 +327,12 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
         drivers=driver_forecasts,
     )
 
-    # --- driver_forecasts_hindcast.json（後ろ向き検証） ---
-    # アンカーを HINDCAST_MONTHS か月前に置き、その時点までのデータだけで
-    # ドライバーを先行き予測する（＝当時から見た予測）。フロントは前向きと同じ
-    # ファン機構でカテゴリの平均・信頼帯を計算し、実績と重ねて帯の妥当性を見る。
-    anchor = (last_date - pd.DateOffset(months=HINDCAST_MONTHS)).normalize()
-    hindcast_panel = panel[panel.index <= anchor]
-    hindcast_drivers = build_driver_forecasts(
-        hindcast_panel,
-        driver_union,
-        last_target_date=anchor,
-        horizon=HINDCAST_MONTHS,
-        max_lag=max_lag,
-        label_of=DRIVER_LABELS,
-        unit_of=unit_of,
-    )
-    hindcast_file = DriverForecastFile(
-        generated_at=coeffs.generated_at,
-        horizon=HINDCAST_MONTHS,
-        z=FORECAST_Z,
-        drivers=hindcast_drivers,
-        anchor=anchor.date().isoformat(),
-    )
-
     paths = {
         "coefficients": out_dir / "coefficients.json",
         "baseline": out_dir / "baseline.json",
         "backtest": out_dir / "backtest.json",
         "series": out_dir / "series.json",
         "driver_forecasts": out_dir / "driver_forecasts.json",
-        "driver_forecasts_hindcast": out_dir / "driver_forecasts_hindcast.json",
         "sources": out_dir / "sources.json",
     }
     paths["coefficients"].write_text(
@@ -368,9 +343,6 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
     paths["series"].write_text(series_file.model_dump_json(indent=2), encoding="utf-8")
     paths["driver_forecasts"].write_text(
         driver_file.model_dump_json(indent=2), encoding="utf-8"
-    )
-    paths["driver_forecasts_hindcast"].write_text(
-        hindcast_file.model_dump_json(indent=2), encoding="utf-8"
     )
     paths["sources"].write_text(
         json.dumps(sources, ensure_ascii=False, indent=2), encoding="utf-8"
