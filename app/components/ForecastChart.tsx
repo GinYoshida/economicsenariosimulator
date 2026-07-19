@@ -92,8 +92,9 @@ export default function ForecastChart({
     });
   };
   const off = (key: string) => hidden.has(key);
-  // データポイントを明示する小さな〇マーカー（色は線色に追従）。
-  const dot = { r: 2, strokeWidth: 0 };
+  // データポイントを明示する〇マーカー（白抜き＋線色のリング）。
+  // strokeWidth を 0 にすると白丸が背景に溶けて見えなくなるので必ずリングを描く。
+  const dot = { r: 2.5, strokeWidth: 1.4, fill: "#fff" };
 
   return (
     <section aria-label="消費前年比の予測" data-testid="forecast-chart">

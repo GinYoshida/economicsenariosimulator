@@ -57,7 +57,8 @@ export default function DriverChart({
     });
   };
   const off = (key: string) => hidden.has(key);
-  const dot = { r: 2, strokeWidth: 0 };
+  // データポイントの〇マーカー（白抜き＋線色のリング）。
+  const dot = { r: 2.5, strokeWidth: 1.4, fill: "#fff" };
 
   return (
     <section aria-label={`ドライバー予測 ${driver.driver}`} data-testid="driver-chart">
