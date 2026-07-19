@@ -1,8 +1,1898 @@
 {
-  "generated_at": "2026-07-19T08:13:40.143597+00:00",
+  "generated_at": "2026-07-19T14:41:50.874858+00:00",
   "horizon": 12,
   "z": 1.2816,
   "drivers": [
+    {
+      "driver": "cao.watcher.current",
+      "label_ja": "景気ウォッチャー現状DI",
+      "unit": "di",
+      "points": [
+        {
+          "date": "2016-06-01",
+          "actual": 41.2,
+          "backcast": 43.00815217243026,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-07-01",
+          "actual": 45.1,
+          "backcast": 41.198378377610794,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-08-01",
+          "actual": 45.6,
+          "backcast": 45.11935483632744,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-09-01",
+          "actual": 44.8,
+          "backcast": 45.62192513129176,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-10-01",
+          "actual": 46.2,
+          "backcast": 44.81755318943857,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-11-01",
+          "actual": 48.6,
+          "backcast": 46.22486772227325,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-12-01",
+          "actual": 51.2,
+          "backcast": 48.63736841764747,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-01-01",
+          "actual": 48.6,
+          "backcast": 51.250785336088995,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-02-01",
+          "actual": 48.5,
+          "backcast": 48.63697916351833,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-03-01",
+          "actual": 50.6,
+          "backcast": 48.53626942686027,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-04-01",
+          "actual": 50.4,
+          "backcast": 50.64690721259855,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-05-01",
+          "actual": 50.1,
+          "backcast": 50.44564102193285,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-06-01",
+          "actual": 49.9,
+          "backcast": 50.14387754743698,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-07-01",
+          "actual": 51.0,
+          "backcast": 49.942639590409705,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-08-01",
+          "actual": 49.6,
+          "backcast": 51.04797979414603,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-09-01",
+          "actual": 49.6,
+          "backcast": 49.64070351427764,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-10-01",
+          "actual": 49.9,
+          "backcast": 49.64049999666008,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-11-01",
+          "actual": 52.4,
+          "backcast": 49.94179104137132,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-12-01",
+          "actual": 53.9,
+          "backcast": 52.45396039191889,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-01-01",
+          "actual": 49.1,
+          "backcast": 53.96108373941228,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-02-01",
+          "actual": 48.4,
+          "backcast": 49.13725489903053,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-03-01",
+          "actual": 51.7,
+          "backcast": 48.433658533683094,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-04-01",
+          "actual": 50.9,
+          "backcast": 51.74951455926817,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-05-01",
+          "actual": 47.7,
+          "backcast": 50.9454106245673,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-06-01",
+          "actual": 48.2,
+          "backcast": 47.72980768972002,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-07-01",
+          "actual": 47.5,
+          "backcast": 48.23205741343505,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-08-01",
+          "actual": 48.1,
+          "backcast": 47.52857142596309,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-09-01",
+          "actual": 47.3,
+          "backcast": 48.131279618080214,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-10-01",
+          "actual": 47.7,
+          "backcast": 47.327358488039565,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-11-01",
+          "actual": 49.0,
+          "backcast": 47.72910797857979,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-12-01",
+          "actual": 48.2,
+          "backcast": 49.035046726049224,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-01-01",
+          "actual": 44.8,
+          "backcast": 48.23116278803973,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-02-01",
+          "actual": 46.7,
+          "backcast": 44.81527777590234,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-03-01",
+          "actual": 46.7,
+          "backcast": 46.72396313120077,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-04-01",
+          "actual": 47.0,
+          "backcast": 46.72385320866269,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-05-01",
+          "actual": 44.3,
+          "backcast": 47.02511415285332,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-06-01",
+          "actual": 43.3,
+          "backcast": 44.31272727094256,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-07-01",
+          "actual": 41.7,
+          "backcast": 43.30814479470783,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-08-01",
+          "actual": 42.6,
+          "backcast": 41.70090089953006,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-09-01",
+          "actual": 45.7,
+          "backcast": 42.60493273381225,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-10-01",
+          "actual": 36.3,
+          "backcast": 45.71874999781079,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-11-01",
+          "actual": 39.2,
+          "backcast": 36.2768888886814,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-12-01",
+          "actual": 40.7,
+          "backcast": 39.189823007698486,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-01-01",
+          "actual": 40.6,
+          "backcast": 40.696475769614274,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-02-01",
+          "actual": 27.4,
+          "backcast": 40.596052630353086,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-03-01",
+          "actual": 15.9,
+          "backcast": 27.338427948749935,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-04-01",
+          "actual": 9.5,
+          "backcast": 15.788695654798605,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-05-01",
+          "actual": 15.4,
+          "backcast": 9.361471864703296,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-06-01",
+          "actual": 38.0,
+          "backcast": 15.28750000194379,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-07-01",
+          "actual": 41.3,
+          "backcast": 37.98497853921162,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-08-01",
+          "actual": 43.3,
+          "backcast": 41.299145297981944,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-09-01",
+          "actual": 48.7,
+          "backcast": 43.30765957312984,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-10-01",
+          "actual": 53.6,
+          "backcast": 48.73050847249648,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-11-01",
+          "actual": 46.1,
+          "backcast": 53.651054849738536,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-12-01",
+          "actual": 36.5,
+          "backcast": 46.11932772982536,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-01-01",
+          "actual": 30.1,
+          "backcast": 36.47907949771336,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-02-01",
+          "actual": 40.7,
+          "backcast": 30.052500000303667,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-03-01",
+          "actual": 49.5,
+          "backcast": 40.69668049652108,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-04-01",
+          "actual": 39.4,
+          "backcast": 49.53305784910897,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-05-01",
+          "actual": 36.4,
+          "backcast": 39.391358024235096,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-06-01",
+          "actual": 45.4,
+          "backcast": 36.379098360164456,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-07-01",
+          "actual": 47.7,
+          "backcast": 45.415918365633125,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-08-01",
+          "actual": 34.3,
+          "backcast": 47.725203250421444,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-09-01",
+          "actual": 43.3,
+          "backcast": 34.27085020246953,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-10-01",
+          "actual": 56.2,
+          "backcast": 43.307258062995466,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-11-01",
+          "actual": 58.5,
+          "backcast": 56.25903614202524,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-12-01",
+          "actual": 58.6,
+          "backcast": 58.56799999774499,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-01-01",
+          "actual": 35.9,
+          "backcast": 58.6681274878818,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-02-01",
+          "actual": 36.6,
+          "backcast": 35.877777777894835,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-03-01",
+          "actual": 48.9,
+          "backcast": 36.58063241018692,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-04-01",
+          "actual": 50.7,
+          "backcast": 48.92913385627166,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-05-01",
+          "actual": 52.6,
+          "backcast": 50.736078429726426,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-06-01",
+          "actual": 51.8,
+          "backcast": 52.6433593732701,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-07-01",
+          "actual": 43.5,
+          "backcast": 51.8400778194353,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-08-01",
+          "actual": 44.8,
+          "backcast": 43.507751937055815,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-09-01",
+          "actual": 49.6,
+          "backcast": 44.812741311375646,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-10-01",
+          "actual": 51.1,
+          "backcast": 49.63115384448657,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-11-01",
+          "actual": 49.7,
+          "backcast": 51.13678160762352,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-12-01",
+          "actual": 49.0,
+          "backcast": 49.7312977085171,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-01-01",
+          "actual": 46.5,
+          "backcast": 49.028517108854935,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-02-01",
+          "actual": 51.0,
+          "backcast": 46.51893939266424,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-03-01",
+          "actual": 55.2,
+          "backcast": 51.03584905495873,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-04-01",
+          "actual": 55.7,
+          "backcast": 55.25150375770147,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-05-01",
+          "actual": 54.5,
+          "backcast": 55.75318351905354,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-06-01",
+          "actual": 53.6,
+          "backcast": 54.54850746123033,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-07-01",
+          "actual": 54.1,
+          "backcast": 53.64498141118444,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-08-01",
+          "actual": 52.8,
+          "backcast": 54.1466666651572,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-09-01",
+          "actual": 50.4,
+          "backcast": 52.84169741554805,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-10-01",
+          "actual": 49.9,
+          "backcast": 50.43272058686038,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-11-01",
+          "actual": 49.8,
+          "backcast": 49.93076922932045,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-12-01",
+          "actual": 50.9,
+          "backcast": 49.830291969342426,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-01-01",
+          "actual": 47.4,
+          "backcast": 50.93418181668568,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-02-01",
+          "actual": 50.3,
+          "backcast": 47.42137681025551,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-03-01",
+          "actual": 52.4,
+          "backcast": 50.33176895150991,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-04-01",
+          "actual": 50.2,
+          "backcast": 52.43920863160501,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-05-01",
+          "actual": 46.8,
+          "backcast": 50.23118279435135,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-06-01",
+          "actual": 47.3,
+          "backcast": 46.81892857006448,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-07-01",
+          "actual": 48.3,
+          "backcast": 47.320640567887395,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-08-01",
+          "actual": 48.3,
+          "backcast": 48.32411347367962,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-09-01",
+          "actual": 47.6,
+          "backcast": 48.32402826709905,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-10-01",
+          "actual": 46.6,
+          "backcast": 47.621478871798885,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-11-01",
+          "actual": 48.2,
+          "backcast": 46.61789473538516,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-12-01",
+          "actual": 49.0,
+          "backcast": 48.2234265719245,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-01-01",
+          "actual": 45.5,
+          "backcast": 49.026132402746484,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-02-01",
+          "actual": 45.1,
+          "backcast": 45.51388888749286,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-03-01",
+          "actual": 47.8,
+          "backcast": 45.112456745869224,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-04-01",
+          "actual": 44.6,
+          "backcast": 47.821724136395126,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-05-01",
+          "actual": 44.8,
+          "backcast": 44.610652919519914,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-06-01",
+          "actual": 45.1,
+          "backcast": 44.81130136829607,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-07-01",
+          "actual": 45.5,
+          "backcast": 45.11228668786917,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-08-01",
+          "actual": 46.3,
+          "backcast": 45.513605440648554,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-09-01",
+          "actual": 46.6,
+          "backcast": 46.31627118494585,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-10-01",
+          "actual": 48.5,
+          "backcast": 46.61722972827717,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-11-01",
+          "actual": 48.0,
+          "backcast": 48.52356902217148,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-12-01",
+          "actual": 48.5,
+          "backcast": 48.02181207920887,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-01-01",
+          "actual": 45.4,
+          "backcast": 48.52341136990448,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-02-01",
+          "actual": 48.2,
+          "backcast": 45.41299999860584,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-03-01",
+          "actual": 44.7,
+          "backcast": 48.222259134777964,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-04-01",
+          "actual": 41.6,
+          "backcast": 44.71059602506211,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-05-01",
+          "actual": 43.1,
+          "backcast": 41.600330031331076,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-06-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.10526315615536,
+          "std": 4.252870754257362
+        },
+        {
+          "date": "2026-07-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.11052631237184,
+          "std": 6.024319214028112
+        },
+        {
+          "date": "2026-08-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.11578946858832,
+          "std": 7.390300198357552
+        },
+        {
+          "date": "2026-09-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.1210526248048,
+          "std": 8.547470663331989
+        },
+        {
+          "date": "2026-10-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.126315781021276,
+          "std": 9.571863723885622
+        },
+        {
+          "date": "2026-11-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.131578937237755,
+          "std": 10.502404403101728
+        },
+        {
+          "date": "2026-12-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.136842093454234,
+          "std": 11.362175145348596
+        },
+        {
+          "date": "2027-01-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.14210524967071,
+          "std": 12.166188906580205
+        },
+        {
+          "date": "2027-02-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.14736840588719,
+          "std": 12.924855267175777
+        },
+        {
+          "date": "2027-03-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.15263156210367,
+          "std": 13.64573990424166
+        },
+        {
+          "date": "2027-04-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.15789471832015,
+          "std": 14.334544083472197
+        },
+        {
+          "date": "2027-05-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.16315787453663,
+          "std": 14.99568915781874
+        },
+        {
+          "date": "2027-06-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.16842103075311,
+          "std": 15.632684838026215
+        },
+        {
+          "date": "2027-07-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 43.17368418696959,
+          "std": 16.248371606487265
+        }
+      ]
+    },
+    {
+      "driver": "cao.watcher.outlook",
+      "label_ja": "景気ウォッチャー先行きDI",
+      "unit": "di",
+      "points": [
+        {
+          "date": "2016-06-01",
+          "actual": 41.5,
+          "backcast": 47.30326086930845,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-07-01",
+          "actual": 47.1,
+          "backcast": 41.471891893725086,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-08-01",
+          "actual": 47.4,
+          "backcast": 47.102150537355215,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-09-01",
+          "actual": 48.5,
+          "backcast": 47.40374331527729,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-10-01",
+          "actual": 49.0,
+          "backcast": 48.50957446749519,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-11-01",
+          "actual": 49.1,
+          "backcast": 49.012169311449206,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2016-12-01",
+          "actual": 49.0,
+          "backcast": 49.112631578215385,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-01-01",
+          "actual": 49.7,
+          "backcast": 49.012041884127065,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-02-01",
+          "actual": 51.5,
+          "backcast": 49.71562499909356,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-03-01",
+          "actual": 49.0,
+          "backcast": 51.52487046488249,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-04-01",
+          "actual": 50.4,
+          "backcast": 49.01185566949241,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-05-01",
+          "actual": 51.5,
+          "backcast": 50.418974357881375,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-06-01",
+          "actual": 51.5,
+          "backcast": 51.52448979454652,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-07-01",
+          "actual": 50.6,
+          "backcast": 51.52436548090432,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-08-01",
+          "actual": 50.1,
+          "backcast": 50.61969696864002,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-09-01",
+          "actual": 50.4,
+          "backcast": 50.117085426206955,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-10-01",
+          "actual": 53.7,
+          "backcast": 50.41849999898324,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-11-01",
+          "actual": 51.7,
+          "backcast": 53.73482586874096,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2017-12-01",
+          "actual": 51.3,
+          "backcast": 51.72475247398815,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-01-01",
+          "actual": 52.8,
+          "backcast": 51.32266009732833,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-02-01",
+          "actual": 52.6,
+          "backcast": 52.82990195919798,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-03-01",
+          "actual": 50.1,
+          "backcast": 52.62878048632461,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-04-01",
+          "actual": 51.1,
+          "backcast": 50.11650485353168,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-05-01",
+          "actual": 50.7,
+          "backcast": 51.12125603750165,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-06-01",
+          "actual": 50.9,
+          "backcast": 50.71923076822012,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-07-01",
+          "actual": 49.0,
+          "backcast": 50.92009569271924,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-08-01",
+          "actual": 50.4,
+          "backcast": 49.01095238035857,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-09-01",
+          "actual": 50.7,
+          "backcast": 50.417535544056676,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-10-01",
+          "actual": 49.9,
+          "backcast": 50.718867923537466,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-11-01",
+          "actual": 50.4,
+          "backcast": 49.91502347338527,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2018-12-01",
+          "actual": 47.0,
+          "backcast": 50.41728971870699,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-01-01",
+          "actual": 50.0,
+          "backcast": 47.001395348684476,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-02-01",
+          "actual": 49.9,
+          "backcast": 50.01527777688877,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-03-01",
+          "actual": 47.9,
+          "backcast": 49.91474654299756,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-04-01",
+          "actual": 48.5,
+          "backcast": 47.905504586795445,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-05-01",
+          "actual": 46.4,
+          "backcast": 48.50821917754819,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-06-01",
+          "actual": 46.3,
+          "backcast": 46.39863636354551,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-07-01",
+          "actual": 43.9,
+          "backcast": 46.298190045122276,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-08-01",
+          "actual": 39.1,
+          "backcast": 43.887387387725944,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-09-01",
+          "actual": 36.7,
+          "backcast": 39.065919283701476,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-10-01",
+          "actual": 43.6,
+          "backcast": 36.655357144360764,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-11-01",
+          "actual": 45.5,
+          "backcast": 43.586222222372704,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2019-12-01",
+          "actual": 44.5,
+          "backcast": 45.49469026547241,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-01-01",
+          "actual": 42.9,
+          "backcast": 44.490308370257864,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-02-01",
+          "actual": 26.6,
+          "backcast": 42.88333333379866,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-03-01",
+          "actual": 18.7,
+          "backcast": 26.512227077460143,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-04-01",
+          "actual": 17.7,
+          "backcast": 18.578260873665826,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-05-01",
+          "actual": 37.3,
+          "backcast": 17.574458878481053,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-06-01",
+          "actual": 44.8,
+          "backcast": 37.25948275938836,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-07-01",
+          "actual": 35.4,
+          "backcast": 44.79184549364196,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-08-01",
+          "actual": 41.0,
+          "backcast": 35.351709403462124,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-09-01",
+          "actual": 47.1,
+          "backcast": 40.97574468147826,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-10-01",
+          "actual": 48.4,
+          "backcast": 47.10169491510275,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-11-01",
+          "actual": 36.1,
+          "backcast": 48.40717299559918,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2020-12-01",
+          "actual": 36.1,
+          "backcast": 36.055462186516365,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-01-01",
+          "actual": 41.5,
+          "backcast": 36.05564853686877,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-02-01",
+          "actual": 53.0,
+          "backcast": 41.478333333872385,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-03-01",
+          "actual": 48.6,
+          "backcast": 53.026141077941205,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-04-01",
+          "actual": 41.5,
+          "backcast": 48.6078512396746,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-05-01",
+          "actual": 46.8,
+          "backcast": 41.47860082386782,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-06-01",
+          "actual": 52.6,
+          "backcast": 46.80040983601169,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-07-01",
+          "actual": 47.1,
+          "backcast": 52.624081632008796,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-08-01",
+          "actual": 41.7,
+          "backcast": 47.10162601645372,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-09-01",
+          "actual": 56.7,
+          "backcast": 41.67975708571962,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-10-01",
+          "actual": 58.3,
+          "backcast": 56.740322579423214,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-11-01",
+          "actual": 54.6,
+          "backcast": 58.34658634438115,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2021-12-01",
+          "actual": 49.5,
+          "backcast": 54.63159999946859,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-01-01",
+          "actual": 43.6,
+          "backcast": 49.511155378425116,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-02-01",
+          "actual": 46.5,
+          "backcast": 43.58769841314084,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-03-01",
+          "actual": 48.4,
+          "backcast": 46.49920948614294,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-04-01",
+          "actual": 48.0,
+          "backcast": 48.40669291324382,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-05-01",
+          "actual": 51.3,
+          "backcast": 48.00509803916544,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-06-01",
+          "actual": 49.2,
+          "backcast": 51.31796874961543,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-07-01",
+          "actual": 42.6,
+          "backcast": 49.20972762636623,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-08-01",
+          "actual": 47.6,
+          "backcast": 42.58410852760117,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-09-01",
+          "actual": 49.3,
+          "backcast": 47.603474903310605,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-10-01",
+          "actual": 48.2,
+          "backcast": 49.3099999998183,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-11-01",
+          "actual": 46.4,
+          "backcast": 48.20574712639663,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2022-12-01",
+          "actual": 46.3,
+          "backcast": 46.39885496191473,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-01-01",
+          "actual": 49.1,
+          "backcast": 46.298479087495174,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-02-01",
+          "actual": 52.0,
+          "backcast": 49.10909090890771,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-03-01",
+          "actual": 54.1,
+          "backcast": 52.01999999966779,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-04-01",
+          "actual": 55.2,
+          "backcast": 54.127819548461275,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-05-01",
+          "actual": 54.8,
+          "backcast": 55.2318352055599,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-06-01",
+          "actual": 53.6,
+          "backcast": 54.83022388022493,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-07-01",
+          "actual": 53.0,
+          "backcast": 53.62565055732313,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-08-01",
+          "actual": 50.0,
+          "backcast": 53.0233333330458,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-09-01",
+          "actual": 49.7,
+          "backcast": 50.012177121662724,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-10-01",
+          "actual": 49.6,
+          "backcast": 49.71102941159609,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-11-01",
+          "actual": 49.4,
+          "backcast": 49.61062271045312,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2023-12-01",
+          "actual": 48.6,
+          "backcast": 49.40985401443886,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-01-01",
+          "actual": 51.9,
+          "backcast": 48.60690909078974,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-02-01",
+          "actual": 53.5,
+          "backcast": 51.91884057939229,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-03-01",
+          "actual": 51.9,
+          "backcast": 53.52454873615045,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-04-01",
+          "actual": 49.3,
+          "backcast": 51.91870503578349,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-05-01",
+          "actual": 47.7,
+          "backcast": 49.309318996311035,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-06-01",
+          "actual": 49.2,
+          "backcast": 47.7035714284716,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-07-01",
+          "actual": 48.6,
+          "backcast": 49.20889679694534,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-08-01",
+          "actual": 49.2,
+          "backcast": 48.606737588510626,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-09-01",
+          "actual": 49.2,
+          "backcast": 49.20883392208032,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-10-01",
+          "actual": 48.0,
+          "backcast": 49.20880281673691,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-11-01",
+          "actual": 48.4,
+          "backcast": 48.00456140338825,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2024-12-01",
+          "actual": 46.9,
+          "backcast": 48.40594405577846,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-01-01",
+          "actual": 47.9,
+          "backcast": 46.90069686400558,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-02-01",
+          "actual": 48.4,
+          "backcast": 47.90416666649089,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-03-01",
+          "actual": 46.6,
+          "backcast": 48.405882352778285,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-04-01",
+          "actual": 43.4,
+          "backcast": 46.59965517231278,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-05-01",
+          "actual": 46.1,
+          "backcast": 43.388659793745504,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-06-01",
+          "actual": 46.9,
+          "backcast": 46.09794520526373,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-07-01",
+          "actual": 47.0,
+          "backcast": 46.90068259369637,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-08-01",
+          "actual": 46.7,
+          "backcast": 47.00102040802282,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-09-01",
+          "actual": 48.2,
+          "backcast": 46.699999999867956,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-10-01",
+          "actual": 52.1,
+          "backcast": 48.20506756740428,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-11-01",
+          "actual": 48.8,
+          "backcast": 52.11818181800403,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2025-12-01",
+          "actual": 48.1,
+          "backcast": 48.80704697983239,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-01-01",
+          "actual": 50.6,
+          "backcast": 48.10468227413391,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-02-01",
+          "actual": 51.8,
+          "backcast": 50.61299999984611,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-03-01",
+          "actual": 39.6,
+          "backcast": 51.8169435214989,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-04-01",
+          "actual": 39.0,
+          "backcast": 39.576490066226725,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-05-01",
+          "actual": 40.9,
+          "backcast": 38.97458745842636,
+          "mean": null,
+          "std": null
+        },
+        {
+          "date": "2026-06-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.88092105229406,
+          "std": 3.8806271419179543
+        },
+        {
+          "date": "2026-07-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.86184210463906,
+          "std": 5.497024951834937
+        },
+        {
+          "date": "2026-08-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.842763156984056,
+          "std": 6.743444885247388
+        },
+        {
+          "date": "2026-09-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.82368420932905,
+          "std": 7.7993309849285
+        },
+        {
+          "date": "2026-10-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.80460526167405,
+          "std": 8.734061368999042
+        },
+        {
+          "date": "2026-11-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.785526314019044,
+          "std": 9.583154046312297
+        },
+        {
+          "date": "2026-12-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.76644736636404,
+          "std": 10.367671110054198
+        },
+        {
+          "date": "2027-01-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.74736841870904,
+          "std": 11.101311468029314
+        },
+        {
+          "date": "2027-02-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.72828947105403,
+          "std": 11.793573574928322
+        },
+        {
+          "date": "2027-03-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.70921052339903,
+          "std": 12.45136090222484
+        },
+        {
+          "date": "2027-04-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.690131575744026,
+          "std": 13.079875697454934
+        },
+        {
+          "date": "2027-05-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.67105262808902,
+          "std": 13.683152323114719
+        },
+        {
+          "date": "2027-06-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.65197368043402,
+          "std": 14.26439329335712
+        },
+        {
+          "date": "2027-07-01",
+          "actual": null,
+          "backcast": null,
+          "mean": 40.632894732779015,
+          "std": 14.826190469940803
+        }
+      ]
+    },
     {
       "driver": "cpi.clothing",
       "label_ja": "被服価格(CPI)",
