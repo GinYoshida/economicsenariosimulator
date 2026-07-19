@@ -332,18 +332,139 @@ def explore_wage(client: httpx.Client, app_id: str) -> list[str]:
     return ids if ids else [r[1] for r in confirmed[:3]]
 
 
+# ---------------------------------------------------------------------------
+# 統計ダッシュボード API（現行の月次指標。APIキー不要）
+#   e-Stat の getStatsData には現行月次の毎月勤労統計が無いため、賃金は
+#   統計ダッシュボード（dashboard.e-stat.go.jp）から取得する。ここでは
+#   現金給与総額指数・実質賃金指数などの IndicatorCode を特定する。
+# ---------------------------------------------------------------------------
+BASE_DASH = "https://dashboard.e-stat.go.jp/api/1.0/Json"
+DASH_WAGE_KEYWORDS = ["現金給与総額", "実質賃金", "きまって支給", "賃金指数", "所定内給与"]
+
+
+def _dget(client: httpx.Client, path: str, params: dict) -> dict:
+    r = client.get(f"{BASE_DASH}/{path}", params=params, timeout=90)
+    r.raise_for_status()
+    return r.json()
+
+
+def _walk_code_name(node, out: list[tuple[str, str, str]], cycle: str = "") -> None:
+    """JSON を再帰探索し (code, name, cycle) 三つ組を集める（構造非依存）。"""
+    if isinstance(node, dict):
+        cyc = node.get("@cycle") or node.get("@cycleName") or cycle
+        code = node.get("@code") or node.get("@indicatorCode")
+        name = node.get("@name") or node.get("@indicatorName")
+        if code and name:
+            out.append((str(code), str(name), str(cyc)))
+        for v in node.values():
+            _walk_code_name(v, out, cyc)
+    elif isinstance(node, list):
+        for v in node:
+            _walk_code_name(v, out, cycle)
+
+
+def _first_last_times(data_json: dict) -> tuple[int, str, str]:
+    """getData 応答から (件数, 先頭time, 末尾time) を構造非依存で拾う。"""
+    times: list[str] = []
+
+    def rec(node):
+        if isinstance(node, dict):
+            t = node.get("@time")
+            if t:
+                times.append(str(t))
+            for v in node.values():
+                rec(v)
+        elif isinstance(node, list):
+            for v in node:
+                rec(v)
+
+    rec(data_json)
+    if not times:
+        return 0, "", ""
+    times.sort()
+    return len(times), times[0], times[-1]
+
+
+def explore_dashboard_wage(client: httpx.Client) -> None:
+    """統計ダッシュボードから賃金系 IndicatorCode を特定し、期間を確認する。"""
+    print("\n" + "=" * 72)
+    print("統計ダッシュボード（賃金系指標の探索） base=" + BASE_DASH)
+
+    # getIndicatorInfo をまず無指定で取得（全指標メタ）。構造は再帰探索で吸収。
+    meta = None
+    for attempt_params in ({"Lang": "JP"}, {}):
+        try:
+            meta = _dget(client, "getIndicatorInfo", attempt_params)
+            break
+        except httpx.HTTPError as e:
+            print(f"  getIndicatorInfo {attempt_params} HTTP error: {e}")
+    if meta is None:
+        print("  getIndicatorInfo 取得失敗")
+        return
+
+    # RESULT/STATUS とトップ構造を出す（想定外形状でも次に活かせるよう）。
+    top_keys = list(meta.keys())
+    print(f"  top-level keys: {top_keys}")
+    root = meta.get(top_keys[0], {}) if top_keys else {}
+    result = root.get("RESULT") or root.get("result")
+    print(f"  RESULT: {result}")
+
+    pairs: list[tuple[str, str, str]] = []
+    _walk_code_name(meta, pairs)
+    print(f"  indicators found (code,name pairs): {len(pairs)}")
+
+    # 賃金キーワードで絞り込み、重複コードを除去。
+    seen_codes: set[str] = set()
+    wage_hits: list[tuple[str, str, str]] = []
+    for code, name, cyc in pairs:
+        if code in seen_codes:
+            continue
+        if any(k in name for k in DASH_WAGE_KEYWORDS):
+            seen_codes.add(code)
+            wage_hits.append((code, name, cyc))
+
+    print(f"\n  >>> 賃金系 indicator: {len(wage_hits)} 件")
+    for code, name, cyc in wage_hits[:40]:
+        print(f"  - code={code} cycle={cyc} | {name}")
+
+    if not wage_hits:
+        # 想定外構造のときは生JSONの先頭を出して次回の手掛かりにする。
+        raw = str(meta)
+        print("  （賃金系ヒットなし。生JSON先頭2000字を出力）")
+        print(raw[:2000])
+        return
+
+    # 上位数件について getData を叩き、時間範囲（2026まで伸びるか）を確認。
+    for code, name, cyc in wage_hits[:6]:
+        got = None
+        for params in (
+            {"Lang": "JP", "IndicatorCode": code, "RegionCode": "00000"},
+            {"Lang": "JP", "IndicatorCode": code},
+            {"IndicatorCode": code},
+        ):
+            try:
+                got = _dget(client, "getData", params)
+                break
+            except httpx.HTTPError as e:
+                print(f"    getData {code} {params} HTTP error: {e}")
+        if got is None:
+            continue
+        n, first, last = _first_last_times(got)
+        print(f"  == code={code} | {name}")
+        print(f"       getData: n={n} time[{first} .. {last}]")
+
+
 def main() -> int:
-    app_id = os.environ.get("ESTAT_APP_ID", "").strip()
-    if not app_id:
-        print("ERROR: ESTAT_APP_ID is not set", file=sys.stderr)
-        return 2
+    app_id = os.environ.get("ESTAT_APP_ID", "").strip()  # ダッシュボードでは未使用
     try:
         with httpx.Client() as client:
-            # 賃金表の候補と期間（総合CPIは code=0001 で確定済み）
-            wage_ids = explore_wage(client, app_id)
-            # 上位3候補の軸（産業/規模/就業形態/表章/時間）を確認
-            for sid in wage_ids[:3]:
-                inspect_table(client, app_id, sid, cat_hints=WAGE_HINTS)
+            # 現行月次の賃金は統計ダッシュボードから取得する（e-Stat DB は凍結）。
+            explore_dashboard_wage(client)
+            # 参考: e-Stat の毎月勤労統計は全表凍結（2015以前）を確認済み。
+            if app_id and os.environ.get("ESTAT_RERUN_WAGE") == "1":
+                wage_ids = explore_wage(client, app_id)
+                for sid in wage_ids[:3]:
+                    inspect_table(client, app_id, sid, cat_hints=WAGE_HINTS)
     except httpx.HTTPError as e:
         print(f"HTTP error: {e}", file=sys.stderr)
         return 1
