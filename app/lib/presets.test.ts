@@ -14,12 +14,25 @@ const baseValues = {
 };
 
 describe("driverClass", () => {
-  it("classifies sentiment, cost and rate drivers", () => {
+  it("classifies sentiment, cost, rate and income drivers", () => {
     expect(driverClass("cao.watcher.outlook")).toBe("sentiment");
     expect(driverClass("fut.cotton")).toBe("cost");
     expect(driverClass("cpi.food")).toBe("cost");
+    expect(driverClass("cpi.headline")).toBe("cost");
     expect(driverClass("boj.usdjpy")).toBe("cost");
     expect(driverClass("boj.policy_rate")).toBe("rate");
+    expect(driverClass("wage.cash_earnings")).toBe("income");
+  });
+});
+
+describe("income preset direction", () => {
+  it("optimistic raises nominal wage, pessimistic lowers it (opposite of cost)", () => {
+    const ids = ["wage.cash_earnings"];
+    const base = buildPaths(ids, 1, "base", {});
+    const opt = buildPaths(ids, 1, "optimistic", {});
+    const pes = buildPaths(ids, 1, "pessimistic", {});
+    expect(opt["wage.cash_earnings"][0]).toBeGreaterThan(base["wage.cash_earnings"][0]);
+    expect(pes["wage.cash_earnings"][0]).toBeLessThan(base["wage.cash_earnings"][0]);
   });
 });
 

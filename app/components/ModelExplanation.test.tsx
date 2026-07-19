@@ -59,4 +59,13 @@ describe("ModelExplanation", () => {
     expect(screen.getByTestId("model-clothing")).toBeInTheDocument();
     expect(screen.getByTestId("driver-food-cpi.food")).toBeInTheDocument();
   });
+
+  it("renders the data-flow diagram and the model math sections", () => {
+    render(<ModelExplanation coefficients={coefficients} backtest={backtest} />);
+    const flow = screen.getByTestId("model-dataflow");
+    const math = screen.getByTestId("model-math");
+    // data-flow names the dashboard wage source; math covers the state-space
+    expect(flow.textContent).toMatch(/統計ダッシュボード/);
+    expect(math.textContent).toMatch(/局所線形トレンド/);
+  });
 });

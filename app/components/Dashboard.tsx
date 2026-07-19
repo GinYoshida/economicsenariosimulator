@@ -64,6 +64,7 @@ const SPAN_BY_CLASS: Record<
   sentiment: { span: 10, step: 1, unit: "pt" },
   cost: { span: 0.1, step: 0.005, unit: "" },
   rate: { span: 0.5, step: 0.05, unit: "%" },
+  income: { span: 0.05, step: 0.005, unit: "" },
 };
 
 function pctLabel(v: number): string {

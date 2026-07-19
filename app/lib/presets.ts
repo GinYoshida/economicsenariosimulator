@@ -7,25 +7,29 @@
 import type { DriverPath } from "@/app/lib/scenario";
 
 export type Preset = "optimistic" | "base" | "pessimistic";
-export type DriverClass = "sentiment" | "cost" | "rate";
+export type DriverClass = "sentiment" | "cost" | "rate" | "income";
 
 type PresetConfig = {
   // 各種別の base からのシフト量（ドライバー自身の単位）。
   sentiment: number;
   cost: number;
   rate: number;
+  income: number;
 };
 
 export const PRESETS: Record<Preset, PresetConfig> = {
-  optimistic: { sentiment: +3, cost: -0.02, rate: 0 },
-  base: { sentiment: 0, cost: 0, rate: 0 },
-  pessimistic: { sentiment: -3, cost: +0.02, rate: +0.001 },
+  // income は名目給与YoY。楽観は賃上げ加速（+1pp）、悲観は減速（-1pp）。
+  // cost とは符号が逆（賃金上昇は消費に有利）。
+  optimistic: { sentiment: +3, cost: -0.02, rate: 0, income: +0.01 },
+  base: { sentiment: 0, cost: 0, rate: 0, income: 0 },
+  pessimistic: { sentiment: -3, cost: +0.02, rate: +0.001, income: -0.01 },
 };
 
 /** ドライバー ID から種別を判定する。 */
 export function driverClass(driverId: string): DriverClass {
   if (driverId.startsWith("cao.")) return "sentiment";
   if (driverId === "boj.policy_rate") return "rate";
+  if (driverId.startsWith("wage.")) return "income";
   // cpi.* / fut.* / boj.usdjpy などコスト・円安要因
   return "cost";
 }
