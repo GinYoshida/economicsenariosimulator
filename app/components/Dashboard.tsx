@@ -10,10 +10,8 @@ import DriverChart from "@/app/components/DriverChart";
 import DriverSliders, {
   type DriverSliderSpec,
 } from "@/app/components/DriverSliders";
+import CategoryChart, { type CategoryRow } from "@/app/components/CategoryChart";
 import FitScatter from "@/app/components/FitScatter";
-import ForecastChart, {
-  type ForecastRow,
-} from "@/app/components/ForecastChart";
 import ModelExplanation from "@/app/components/ModelExplanation";
 import SourcePanel from "@/app/components/SourcePanel";
 import SourceTables from "@/app/components/SourceTables";
@@ -65,6 +63,12 @@ const SPAN_BY_CLASS: Record<
   cost: { span: 0.1, step: 0.005, unit: "" },
   rate: { span: 0.5, step: 0.05, unit: "%" },
   income: { span: 0.05, step: 0.005, unit: "" },
+};
+
+// カテゴリの線・帯の色。
+const CAT_COLOR: Record<string, string> = {
+  food: "#e07a3f",
+  clothing: "#3f6fe0",
 };
 
 function pctLabel(v: number): string {
@@ -133,6 +137,7 @@ export default function Dashboard({
   const [showMA, setShowMA] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [windowKey, setWindowKey] = useState("5y");
+  const [fcHorizon, setFcHorizon] = useState(horizon); // 予測期間（1..12か月先）
   const [yMin, setYMin] = useState("");
   const [yMax, setYMax] = useState("");
   const [selectedDriver, setSelectedDriver] = useState(
@@ -175,59 +180,38 @@ export default function Dashboard({
     shift,
     overrides,
   });
-  const foodByDate = Object.fromEntries(foodFan.map((p) => [p.date, p]));
-  const clothingByDate = Object.fromEntries(clothingFan.map((p) => [p.date, p]));
-
-  // 「12か月先予測の帯」を全期間に連続表示する。各月の当てはめ（モデル中心値）に、
-  // 前方12か月予測と同じ幅の80%帯（水平に一定幅）を敷き、実績が帯に収まるかを見る。
-  const bandHalf = (fan: { low: number; high: number }[]) =>
-    fan.length ? (fan[fan.length - 1].high - fan[fan.length - 1].low) / 2 : 0;
-  const halfFood = bandHalf(foodFan);
-  const halfClothing = bandHalf(clothingFan);
-
-  const allRows: ForecastRow[] = [];
-  baseline.history.forEach((h, idx) => {
-    const isLast = idx === baseline.history.length - 1;
-    const fFit = h.food_fit ?? null;
-    const cFit = h.clothing_fit ?? null;
-    allRows.push({
-      date: h.date,
-      kind: "history",
-      foodActual: h.food_yoy,
-      clothingActual: h.clothing_yoy,
-      foodBackcast: h.food_fit ?? null,
-      clothingBackcast: h.clothing_fit ?? null,
-      // 実績と予測線をつなぐため最終実績点は予測にも置く
-      foodForecast: isLast ? h.food_yoy : null,
-      clothingForecast: isLast ? h.clothing_yoy : null,
-      // 12か月先予測の帯（当てはめ中心・一定幅）を全期間に敷く
-      foodBandLow: fFit != null ? fFit - halfFood : null,
-      foodBandHigh: fFit != null ? fFit + halfFood : null,
-      clothingBandLow: cFit != null ? cFit - halfClothing : null,
-      clothingBandHigh: cFit != null ? cFit + halfClothing : null,
-    });
-  });
-  for (let i = 0; i < horizon; i++) {
-    const date = addMonths(lastDate, i + 1);
-    const f = foodByDate[date];
-    const c = clothingByDate[date];
-    allRows.push({
-      date,
-      kind: "forecast",
-      foodForecast: f?.mean ?? null,
-      clothingForecast: c?.mean ?? null,
-      foodLow: f?.low ?? null,
-      foodHigh: f?.high ?? null,
-      clothingLow: c?.low ?? null,
-      clothingHigh: c?.high ?? null,
-    });
-  }
+  // 「h か月先予測」の帯幅（標準偏差）を前方ファンの h ステップ目から得る。
+  // 履歴も前方も同じ h に統一する（異なる予測期間の混在を避ける）。
+  const hSel = Math.min(Math.max(fcHorizon, 1), Math.max(foodFan.length, 1));
+  const sdAt = (fan: { low: number; high: number }[]) => {
+    const i = Math.min(hSel, fan.length) - 1;
+    return i >= 0 ? (fan[i].high - fan[i].low) / (2 * z) : 0;
+  };
+  const sdFood = sdAt(foodFan);
+  const sdClothing = sdAt(clothingFan);
 
   const windowMonths =
     WINDOW_OPTIONS.find((w) => w.key === windowKey)?.months ?? Infinity;
   const cutoff =
     windowMonths === Infinity ? "" : addMonths(lastDate, -windowMonths);
-  const rows = allRows.filter((r) => r.kind === "forecast" || r.date >= cutoff);
+
+  // カテゴリ別の行（履歴: 当てはめ中心／将来: 予測平均を h か月先まで）。
+  function catRows(
+    actualOf: (h: (typeof baseline.history)[number]) => number,
+    fitOf: (h: (typeof baseline.history)[number]) => number | null | undefined,
+    fan: { date: string; mean: number }[],
+  ): CategoryRow[] {
+    const out: CategoryRow[] = [];
+    for (const h of baseline.history) {
+      out.push({ date: h.date, kind: "history", actual: actualOf(h), center: fitOf(h) ?? null });
+    }
+    for (let k = 0; k < hSel && k < fan.length; k++) {
+      out.push({ date: fan[k].date, kind: "forecast", actual: null, center: fan[k].mean });
+    }
+    return out.filter((r) => r.kind === "forecast" || r.date >= cutoff);
+  }
+  const foodRows = catRows((h) => h.food_yoy, (h) => h.food_fit, foodFan);
+  const clothingRows = catRows((h) => h.clothing_yoy, (h) => h.clothing_fit, clothingFan);
 
   const yDomain: [number | "auto", number | "auto"] = [
     yMin === "" ? "auto" : Number(yMin) / 100,
@@ -351,6 +335,23 @@ export default function Dashboard({
                 </select>
               </label>
               <label className="flex items-center gap-1">
+                予測期間
+                <select
+                  aria-label="予測期間（か月先）"
+                  value={hSel}
+                  onChange={(e) => setFcHorizon(Number(e.target.value))}
+                  className="rounded border border-gray-300 px-1 py-0.5"
+                >
+                  {Array.from({ length: Math.max(foodFan.length, 1) }, (_, i) => i + 1).map(
+                    (h) => (
+                      <option key={h} value={h}>
+                        {h}カ月先
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+              <label className="flex items-center gap-1">
                 縦軸% 下限
                 <input
                   type="number"
@@ -375,15 +376,34 @@ export default function Dashboard({
             </div>
           </div>
 
-          <ForecastChart rows={rows} showMovingAverage={showMA} yDomain={yDomain} />
-          <p className="-mt-4 text-[10px] text-gray-400">
-            塗りは{z === 1.96 ? 95 : 80}%信頼帯。実績＝実線／当てはめ＝灰破線／予測＝濃色。
-            説明変数は状態空間モデルで1年先まで予測し、その不確実性を線形モデルへ伝播。
-            スライダーで固定したドライバーは「確定値（帯なし）」として扱います。
-            <br />
-            <b>12M予測帯</b>＝各月の当てはめ（モデル中心値）に、12か月先予測と同じ幅の帯を全期間へ
-            連続で敷いたもの。実績がこの帯に収まる割合で、不確実性の見積りが妥当かを一目で確認できます
-            （凡例クリックで表示切替）。
+          <div data-testid="forecast-chart" className="flex flex-col gap-4">
+            <CategoryChart
+              label="食料"
+              color={CAT_COLOR.food}
+              sd={sdFood}
+              horizon={hSel}
+              rows={foodRows}
+              boundaryDate={lastDate}
+              showMovingAverage={showMA}
+              yDomain={yDomain}
+              testId="forecast-chart-food"
+            />
+            <CategoryChart
+              label="衣料"
+              color={CAT_COLOR.clothing}
+              sd={sdClothing}
+              horizon={hSel}
+              rows={clothingRows}
+              boundaryDate={lastDate}
+              showMovingAverage={showMA}
+              yDomain={yDomain}
+              testId="forecast-chart-clothing"
+            />
+          </div>
+          <p className="-mt-2 text-[10px] text-gray-400">
+            <b>{hSel}カ月先予測</b>の視点で統一表示。実績＝実線＋〇／予測中心＝破線。帯は
+            <b>信頼度別（50/80/95%）</b>に色分け（濃いほど高確率＝狭い帯）。予測期間を変えると帯幅と
+            前方の伸びが連動します。凡例クリックで各系列/帯を表示切替できます。
           </p>
 
           <DriverSliders sliders={sliders} onChange={onSlider} />

@@ -125,9 +125,22 @@ describe("Dashboard scenario interactions", () => {
 
   it("toggling 3-month average adds MA fields to the chart data", () => {
     renderDashboard();
-    expect(screen.getByTestId("forecast-data").textContent).not.toMatch(/MA/);
+    expect(screen.getByTestId("forecast-chart-food-data").textContent).not.toMatch(/MA/);
     fireEvent.click(screen.getByLabelText("3カ月平均を表示"));
-    expect(screen.getByTestId("forecast-data").textContent).toMatch(/MA/);
+    expect(screen.getByTestId("forecast-chart-food-data").textContent).toMatch(/MA/);
+  });
+
+  it("splits food and clothing into separate charts", () => {
+    renderDashboard();
+    expect(screen.getByTestId("forecast-chart-food")).toBeInTheDocument();
+    expect(screen.getByTestId("forecast-chart-clothing")).toBeInTheDocument();
+  });
+
+  it("changes the forecast horizon", () => {
+    renderDashboard(driverForecasts);
+    const sel = screen.getByLabelText("予測期間（か月先）");
+    fireEvent.change(sel, { target: { value: "1" } });
+    expect((sel as HTMLSelectElement).value).toBe("1");
   });
 
   it("decomposition switches with the active category", () => {
