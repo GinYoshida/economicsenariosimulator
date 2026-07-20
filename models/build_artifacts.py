@@ -27,6 +27,7 @@ from models.ols import FitResult, fit_ols, predict
 from etl.registry import REGISTRY
 from models.backtest import run_backtest
 from models.driver_forecast import build_driver_forecasts
+from models.rolling import build_rolling_forecasts
 from models.schema import (
     Backtest,
     BacktestPoint,
@@ -36,6 +37,8 @@ from models.schema import (
     Coefficients,
     DriverCoef,
     DriverForecastFile,
+    RollingForecastFile,
+    RollingPoint,
     SeriesData,
     SeriesFile,
     SeriesPoint,
@@ -46,6 +49,7 @@ BACKTEST_MIN_TRAIN = 24
 SERIES_TAIL = 120  # series.json に載せる直近月数（約10年）
 FORECAST_HORIZON = 12  # ドライバー予測・ファンチャートのホライズン（1年）
 FORECAST_Z = 1.2816  # 80% 信頼帯
+ROLLING_TARGET_MONTHS = 48  # ローリング検証で対象にする直近月数（起点は+horizon分さかのぼる）
 
 MODEL_VERSION = "v1"
 FORECAST_MONTHS = 3
@@ -327,12 +331,30 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
         drivers=driver_forecasts,
     )
 
+    # --- rolling_forecast.json（拡張窓ローリング h か月先予測・検証用） ---
+    rolling_points = build_rolling_forecasts(
+        panel,
+        categories,
+        CATEGORY_DRIVERS,
+        driver_labels=DRIVER_LABELS,
+        unit_of=unit_of,
+        horizon=FORECAST_HORIZON,
+        target_months=ROLLING_TARGET_MONTHS,
+    )
+    rolling_file = RollingForecastFile(
+        generated_at=coeffs.generated_at,
+        horizon=FORECAST_HORIZON,
+        target_months=ROLLING_TARGET_MONTHS,
+        points=[RollingPoint(**p) for p in rolling_points],
+    )
+
     paths = {
         "coefficients": out_dir / "coefficients.json",
         "baseline": out_dir / "baseline.json",
         "backtest": out_dir / "backtest.json",
         "series": out_dir / "series.json",
         "driver_forecasts": out_dir / "driver_forecasts.json",
+        "rolling_forecast": out_dir / "rolling_forecast.json",
         "sources": out_dir / "sources.json",
     }
     paths["coefficients"].write_text(
@@ -343,6 +365,9 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
     paths["series"].write_text(series_file.model_dump_json(indent=2), encoding="utf-8")
     paths["driver_forecasts"].write_text(
         driver_file.model_dump_json(indent=2), encoding="utf-8"
+    )
+    paths["rolling_forecast"].write_text(
+        rolling_file.model_dump_json(indent=2), encoding="utf-8"
     )
     paths["sources"].write_text(
         json.dumps(sources, ensure_ascii=False, indent=2), encoding="utf-8"

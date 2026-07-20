@@ -119,3 +119,24 @@ class DriverForecastFile(BaseModel):
     horizon: int       # 予測月数（例 12）
     z: float           # 信頼帯の係数（80%→1.2816）
     drivers: list[DriverForecast]
+
+
+class RollingPoint(BaseModel):
+    """ローリング h か月先予測の1点（拡張窓・過去=未来同条件）。"""
+
+    category: str          # "food" | "clothing"
+    h: int                 # 予測期間（か月先）
+    date: str              # 対象月（ISO）
+    mean: float            # 予測平均
+    sd: float              # 予測標準偏差（信頼度別の帯に使う）
+    actual: float | None = None  # 対象月の実績（過去のみ・被覆検証用）
+
+
+class RollingForecastFile(BaseModel):
+    """rolling_forecast.json のルート。各 (category, h, target) の予測＋実績。"""
+
+    generated_at: str
+    horizon: int
+    target_months: int
+    points: list[RollingPoint]
+

@@ -155,6 +155,30 @@ export async function loadDriverForecasts(): Promise<DriverForecastFile | null> 
   }
 }
 
+export type RollingPoint = {
+  category: string;
+  h: number;
+  date: string;
+  mean: number;
+  sd: number;
+  actual?: number | null;
+};
+export type RollingForecastFile = {
+  generated_at: string;
+  horizon: number;
+  target_months: number;
+  points: RollingPoint[];
+};
+
+/** rolling_forecast.json（拡張窓ローリング検証）をロード。未生成なら null。 */
+export async function loadRollingForecasts(): Promise<RollingForecastFile | null> {
+  try {
+    return await loadJson<RollingForecastFile>("rolling_forecast.json");
+  } catch {
+    return null;
+  }
+}
+
 /** DriverForecastFile を {driver: {date: {mean,std}}} の参照マップに変換。
  * 過去月は actual を平均・std=0、将来月は mean/std を使う（ファン伝播用）。 */
 export function driverLookup(file: DriverForecastFile | null): DriverForecastLookup {

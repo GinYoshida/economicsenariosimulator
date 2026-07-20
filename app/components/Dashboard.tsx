@@ -21,6 +21,7 @@ import {
   type Baseline,
   type Coefficients,
   type DriverForecastFile,
+  type RollingForecastFile,
   type SeriesFile,
   type SourceMeta,
 } from "@/app/lib/artifacts";
@@ -86,6 +87,7 @@ export default function Dashboard({
   sources,
   series = null,
   driverForecasts = null,
+  rolling = null,
 }: {
   coefficients: Coefficients;
   baseline: Baseline;
@@ -93,11 +95,25 @@ export default function Dashboard({
   sources: SourceMeta[];
   series?: SeriesFile | null;
   driverForecasts?: DriverForecastFile | null;
+  rolling?: RollingForecastFile | null;
 }) {
   const categories = coefficients.categories;
   const lookup = useMemo(() => driverLookup(driverForecasts), [driverForecasts]);
   const horizon = driverForecasts?.horizon ?? 12;
   const z = driverForecasts?.z ?? 1.2816;
+
+  // ローリング検証: (category|h|date) -> {mean, sd, actual}
+  const rollMap = useMemo(() => {
+    const m: Record<string, { mean: number; sd: number; actual: number | null }> = {};
+    for (const p of rolling?.points ?? [])
+      m[`${p.category}|${p.h}|${p.date}`] = {
+        mean: p.mean,
+        sd: p.sd,
+        actual: p.actual ?? null,
+      };
+    return m;
+  }, [rolling]);
+  const hasRolling = (rolling?.points?.length ?? 0) > 0;
 
   const driverIds = useMemo(
     () =>
@@ -199,23 +215,51 @@ export default function Dashboard({
   const cutoff =
     windowMonths === Infinity ? "" : addMonths(lastDate, -windowMonths);
 
-  // カテゴリ別の行（履歴: 当てはめ中心／将来: 予測平均を h か月先まで）。
+  // カテゴリ別の行を作る。
+  // rolling があれば「hSel か月先ローリング予測」（過去=未来同条件）で中心・帯・実績を置く。
+  // 無ければフォールバック（履歴=当てはめ中心＋一定幅、将来=前方ファン）。
   function catRows(
+    cat: string,
     actualOf: (h: (typeof baseline.history)[number]) => number,
     fitOf: (h: (typeof baseline.history)[number]) => number | null | undefined,
     fan: { date: string; mean: number }[],
+    sdConst: number,
   ): CategoryRow[] {
+    const roll = (date: string) => rollMap[`${cat}|${hSel}|${date}`];
     const out: CategoryRow[] = [];
     for (const h of baseline.history) {
-      out.push({ date: h.date, kind: "history", actual: actualOf(h), center: fitOf(h) ?? null });
+      const r = hasRolling ? roll(h.date) : undefined;
+      out.push({
+        date: h.date,
+        kind: "history",
+        actual: actualOf(h),
+        center: r ? r.mean : fitOf(h) ?? null,
+        sd: r ? r.sd : sdConst,
+      });
     }
-    for (let k = 0; k < hSel && k < fan.length; k++) {
-      out.push({ date: fan[k].date, kind: "forecast", actual: null, center: fan[k].mean });
+    for (let k = 0; k < hSel; k++) {
+      const date = addMonths(lastDate, k + 1);
+      const r = hasRolling ? roll(date) : undefined;
+      const fanPt = fan[k];
+      if (!r && !fanPt) break;
+      out.push({
+        date,
+        kind: "forecast",
+        actual: null,
+        center: r ? r.mean : fanPt?.mean ?? null,
+        sd: r ? r.sd : sdConst,
+      });
     }
     return out.filter((r) => r.kind === "forecast" || r.date >= cutoff);
   }
-  const foodRows = catRows((h) => h.food_yoy, (h) => h.food_fit, foodFan);
-  const clothingRows = catRows((h) => h.clothing_yoy, (h) => h.clothing_fit, clothingFan);
+  const foodRows = catRows("food", (h) => h.food_yoy, (h) => h.food_fit, foodFan, sdFood);
+  const clothingRows = catRows(
+    "clothing",
+    (h) => h.clothing_yoy,
+    (h) => h.clothing_fit,
+    clothingFan,
+    sdClothing,
+  );
 
   const yDomain: [number | "auto", number | "auto"] = [
     yMin === "" ? "auto" : Number(yMin) / 100,
@@ -385,7 +429,6 @@ export default function Dashboard({
               label="食料"
               color={CAT_COLOR.food}
               centerColor={CAT_CENTER.food}
-              sd={sdFood}
               horizon={hSel}
               rows={foodRows}
               boundaryDate={lastDate}
@@ -397,7 +440,6 @@ export default function Dashboard({
               label="衣料"
               color={CAT_COLOR.clothing}
               centerColor={CAT_CENTER.clothing}
-              sd={sdClothing}
               horizon={hSel}
               rows={clothingRows}
               boundaryDate={lastDate}
@@ -407,9 +449,12 @@ export default function Dashboard({
             />
           </div>
           <p className="-mt-2 text-[10px] text-gray-400">
-            <b>{hSel}カ月先予測</b>の視点で統一表示。実績＝実線＋〇／予測中心＝破線。帯は
-            <b>信頼度別（50/80/95%）</b>に色分け（濃いほど高確率＝狭い帯）。予測期間を変えると帯幅と
-            前方の伸びが連動します。凡例クリックで各系列/帯を表示切替できます。
+            <b>{hSel}カ月先予測</b>を過去→未来に連続表示。各月について「その{hSel}カ月前を起点に、
+            当時までのデータだけで再学習＋状態空間でドライバーを{hSel}カ月外挿して出した予測」
+            {hasRolling ? "（拡張窓ローリング）" : "（近似・バッチ生成前）"}
+            です。実績＝実線＋〇／予測中心＝破線。帯は<b>信頼度別（50/80/95%）</b>に色分け
+            （濃いほど高確率＝狭い帯）。過去は実績と重ねて「外れても帯に収まるか」を検証できます。
+            予測期間を変えると、過去・未来とも同条件で帯幅・伸びが連動します。凡例クリックで表示切替。
           </p>
 
           <DriverSliders sliders={sliders} onChange={onSlider} />

@@ -20,7 +20,8 @@ export type CategoryRow = {
   date: string;
   kind: "history" | "forecast";
   actual?: number | null;
-  center?: number | null; // 当てはめ（履歴）／予測平均（将来）
+  center?: number | null; // 予測平均（h か月先予測）
+  sd?: number | null; // その点の予測標準偏差（帯幅。点ごとに変化）
 };
 
 type AxisBound = number | "auto";
@@ -41,7 +42,6 @@ export default function CategoryChart({
   label,
   color,
   centerColor,
-  sd,
   horizon,
   rows,
   boundaryDate,
@@ -53,7 +53,6 @@ export default function CategoryChart({
   label: string;
   color: string;
   centerColor?: string; // 予測中心線の色（実績と区別。既定は color）
-  sd: number; // h か月先予測の標準偏差（帯の基準幅）
   horizon: number;
   rows: CategoryRow[];
   boundaryDate?: string;
@@ -82,8 +81,9 @@ export default function CategoryChart({
 
   const data = rows.map((r, i) => {
     const c = r.center;
+    const s = r.sd ?? 0;
     const bandOf = (z: number): [number, number] | null =>
-      c == null ? null : [c - z * sd, c + z * sd];
+      c == null ? null : [c - z * s, c + z * s];
     return {
       ...r,
       ma: ma[i],
