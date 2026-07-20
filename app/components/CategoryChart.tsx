@@ -40,6 +40,7 @@ function pct(v: number | null | undefined): string {
 export default function CategoryChart({
   label,
   color,
+  centerColor,
   sd,
   horizon,
   rows,
@@ -51,6 +52,7 @@ export default function CategoryChart({
 }: {
   label: string;
   color: string;
+  centerColor?: string; // 予測中心線の色（実績と区別。既定は color）
   sd: number; // h か月先予測の標準偏差（帯の基準幅）
   horizon: number;
   rows: CategoryRow[];
@@ -60,6 +62,7 @@ export default function CategoryChart({
   yDomain?: [AxisBound, AxisBound];
   testId?: string;
 }) {
+  const ctr = centerColor ?? color;
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const toggle = (key?: string | number) => {
     if (key == null) return;
@@ -105,7 +108,15 @@ export default function CategoryChart({
               tick={{ fontSize: 10 }}
               tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
             />
-            <Tooltip formatter={(v) => pct(v == null ? null : Number(v))} />
+            <Tooltip
+              formatter={(value, name) => {
+                if (Array.isArray(value)) {
+                  const [lo, hi] = value as [number, number];
+                  return [`${pct(lo)} 〜 ${pct(hi)}`, name];
+                }
+                return [pct(value == null ? null : Number(value)), name];
+              }}
+            />
             <Legend
               wrapperStyle={{ fontSize: 10 }}
               onClick={(o) => toggle((o as { dataKey?: string | number })?.dataKey)}
@@ -145,10 +156,10 @@ export default function CategoryChart({
             {boundaryDate && (
               <ReferenceLine x={boundaryDate} stroke="#888" strokeDasharray="4 4" label={{ value: "現在", fontSize: 10, position: "top" }} />
             )}
-            {/* 予測中心（当てはめ＋将来予測平均） */}
-            <Line type="monotone" dataKey="center" name="予測中心" hide={off("center")} stroke={color} strokeDasharray="5 3" strokeWidth={1.5} dot={false} connectNulls />
-            {/* 実績 */}
-            <Line type="monotone" dataKey="actual" name="実績" hide={off("actual")} stroke={color} strokeWidth={2} dot={dot} activeDot={{ r: 4 }} connectNulls />
+            {/* 予測中心（当てはめ＋将来予測平均）: 別色・太めの破線・マーカー無し */}
+            <Line type="monotone" dataKey="center" name="予測中心" legendType="plainline" hide={off("center")} stroke={ctr} strokeDasharray="7 4" strokeWidth={2} dot={false} connectNulls />
+            {/* 実績: カテゴリ色の実線＋〇マーカー */}
+            <Line type="monotone" dataKey="actual" name="実績" legendType="line" hide={off("actual")} stroke={color} strokeWidth={2} dot={dot} activeDot={{ r: 4 }} connectNulls />
             {showMovingAverage && (
               <Line type="monotone" dataKey="ma" name={`${maWindow}カ月平均`} legendType="none" stroke={color} strokeDasharray="1 2" strokeWidth={1} dot={false} connectNulls />
             )}

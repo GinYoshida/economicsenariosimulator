@@ -65,10 +65,14 @@ const SPAN_BY_CLASS: Record<
   income: { span: 0.05, step: 0.005, unit: "" },
 };
 
-// カテゴリの線・帯の色。
+// カテゴリの色。実績・帯（color）と、予測中心線（centerColor）は別色にする。
 const CAT_COLOR: Record<string, string> = {
   food: "#e07a3f",
   clothing: "#3f6fe0",
+};
+const CAT_CENTER: Record<string, string> = {
+  food: "#7c2d12", // 濃い茶（食料の実績オレンジと区別）
+  clothing: "#6d28d9", // 紫（衣料の実績ブルーと区別）
 };
 
 function pctLabel(v: number): string {
@@ -380,6 +384,7 @@ export default function Dashboard({
             <CategoryChart
               label="食料"
               color={CAT_COLOR.food}
+              centerColor={CAT_CENTER.food}
               sd={sdFood}
               horizon={hSel}
               rows={foodRows}
@@ -391,6 +396,7 @@ export default function Dashboard({
             <CategoryChart
               label="衣料"
               color={CAT_COLOR.clothing}
+              centerColor={CAT_CENTER.clothing}
               sd={sdClothing}
               horizon={hSel}
               rows={clothingRows}
