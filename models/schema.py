@@ -133,12 +133,20 @@ class RollingPoint(BaseModel):
 
 
 class BlendParam(BaseModel):
-    """(category, h) ごとのナイーブ縮約重み w と、ブレンド後OOS誤差std。"""
+    """(category, h) ごとの縮約重み w・帯幅 sd と、生モデルの方向精度メトリクス。"""
 
     category: str
     h: int
     w: float   # 最終 = w·モデル + (1−w)·ナイーブ
     sd: float  # ブレンド後の予測標準偏差（帯幅）
+    # 生モデルの方向（起点からの変化の符号）評価
+    n: int = 0
+    n_up: int = 0
+    da: float = 0.0            # 方向的中率
+    mcc: float = 0.0           # Matthews 相関
+    balanced_acc: float = 0.0  # 上げ/下げ平均正解率
+    pt_stat: float = 0.0       # Pesaran–Timmermann 統計量
+    pt_p: float = 1.0          # 片側 p 値
 
 
 class RollingForecastFile(BaseModel):

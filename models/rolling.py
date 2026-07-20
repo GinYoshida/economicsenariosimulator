@@ -27,6 +27,47 @@ def _iso(ts: pd.Timestamp) -> str:
     return ts.date().isoformat()
 
 
+def _direction_metrics(fit_rows: list[dict]) -> dict:
+    """生モデルの方向予測を評価。DA / MCC / Balanced Acc / Pesaran–Timmermann。
+
+    「向き」は起点値(naive)からの変化の符号: 予測 sign(model−naive) vs 実測 sign(actual−naive)。
+    """
+    import math
+
+    n = len(fit_rows)
+    base = {"n": n, "n_up": 0, "da": 0.0, "mcc": 0.0,
+            "balanced_acc": 0.0, "pt_stat": 0.0, "pt_p": 1.0}
+    if n == 0:
+        return base
+    a_up = [1 if (r["actual"] - r["naive"]) > 0 else 0 for r in fit_rows]
+    m_up = [1 if (r["model"] - r["naive"]) > 0 else 0 for r in fit_rows]
+    da = sum(1 for i in range(n) if a_up[i] == m_up[i]) / n
+    tp = sum(1 for i in range(n) if a_up[i] == 1 and m_up[i] == 1)
+    tn = sum(1 for i in range(n) if a_up[i] == 0 and m_up[i] == 0)
+    fp = sum(1 for i in range(n) if a_up[i] == 0 and m_up[i] == 1)
+    fn = sum(1 for i in range(n) if a_up[i] == 1 and m_up[i] == 0)
+    denom = math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    mcc = ((tp * tn - fp * fn) / denom) if denom > 0 else 0.0
+    sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+    bacc = 0.5 * (sens + spec)
+    # Pesaran–Timmermann
+    px = sum(a_up) / n
+    py = sum(m_up) / n
+    p_star = px * py + (1 - px) * (1 - py)
+    var_p = p_star * (1 - p_star) / n
+    var_pstar = (
+        ((2 * py - 1) ** 2) * px * (1 - px) / n
+        + ((2 * px - 1) ** 2) * py * (1 - py) / n
+        + 4 * px * py * (1 - px) * (1 - py) / (n * n)
+    )
+    dv = var_p - var_pstar
+    pt = ((da - p_star) / math.sqrt(dv)) if dv > 1e-12 else 0.0
+    pt_p = 0.5 * math.erfc(pt / math.sqrt(2))  # 片側 P(Z>pt)
+    return {"n": n, "n_up": int(sum(a_up)), "da": float(da), "mcc": float(mcc),
+            "balanced_acc": float(bacc), "pt_stat": float(pt), "pt_p": float(pt_p)}
+
+
 def build_rolling_forecasts(
     panel: pd.DataFrame,
     categories: list[str],
@@ -147,7 +188,10 @@ def build_rolling_forecasts(
         w = min(1.0, max(0.0, w))
         errs = [w * r["model"] + (1.0 - w) * r["naive"] - r["actual"] for r in fit_rows]
         sd = float(np.sqrt(np.mean(np.square(errs)))) if errs else 0.0
-        blend.append({"category": cat, "h": h, "w": float(w), "sd": sd})
+        blend.append(
+            {"category": cat, "h": h, "w": float(w), "sd": sd,
+             **_direction_metrics(fit_rows)}
+        )
         for r in rs:
             mean = w * r["model"] + (1.0 - w) * r["naive"]
             points.append(
