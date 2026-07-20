@@ -75,7 +75,13 @@ DRIVER_LABELS: dict[str, str] = {
     "fut.sugar": "砂糖先物",
     "fut.cotton": "綿先物",
     "fut.usdjpy": "ドル円先物",
+    # 自己回帰（前値）＝ナイーブ土台。係数はほぼ persistence（φ）。
+    "household.food.real_yoy": "食料 前値(自己相関)",
+    "household.clothing.real_yoy": "衣料 前値(自己相関)",
 }
+
+# 目的変数の前値（AR項）。ナイーブを土台にして残差をドライバーで説明する（①）。
+AR_LAG = 2  # 家計調査の公表ラグ（約5-6週）に合わせた前値ラグ
 
 # カテゴリ別の説明変数（列 -> ラグ月数）。公表の早い系列を優先。
 CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
@@ -83,6 +89,7 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
     # 総合CPI(cpi.headline)は各カテゴリCPIと強く相関し係数を不安定化させたため
     # ドライバーからは外す（データソースとしては保持）。
     "food": {
+        "household.food.real_yoy": AR_LAG,  # 前値（ナイーブ土台）
         "cpi.food": 1,
         "wage.cash_earnings": 2,   # 名目給与YoY（公表ラグ約5-6週→2か月ラグ）
         "cao.cci.attitude": 1,     # 消費者態度指数（現状 e-Stat未収録→取得時のみ）
@@ -93,6 +100,7 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
         "boj.usdjpy": 1,
     },
     "clothing": {
+        "household.clothing.real_yoy": AR_LAG,  # 前値（ナイーブ土台）
         "cpi.clothing": 1,
         "wage.cash_earnings": 2,
         "cao.cci.attitude": 1,

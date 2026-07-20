@@ -64,7 +64,11 @@ const SPAN_BY_CLASS: Record<
   cost: { span: 0.1, step: 0.005, unit: "" },
   rate: { span: 0.5, step: 0.05, unit: "%" },
   income: { span: 0.05, step: 0.005, unit: "" },
+  self: { span: 0.05, step: 0.005, unit: "" }, // 前値（AR項）: UIには出さない
 };
+
+/** 目的変数の前値（AR項）＝シナリオUIから除外する内部ドライバー。 */
+const isBaselineDriver = (id: string) => id.startsWith("household.");
 
 // カテゴリの色。実績・帯（color）と、予測中心線（centerColor）は別色にする。
 const CAT_COLOR: Record<string, string> = {
@@ -157,7 +161,7 @@ export default function Dashboard({
   const [showMA, setShowMA] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [windowKey, setWindowKey] = useState("5y");
-  const [fcHorizon, setFcHorizon] = useState(horizon); // 予測期間（1..12か月先）
+  const [fcHorizon, setFcHorizon] = useState(Math.min(2, horizon)); // 予測期間（既定2か月先）
   const [yMin, setYMin] = useState("");
   const [yMax, setYMax] = useState("");
   const [selectedDriver, setSelectedDriver] = useState(
@@ -265,12 +269,17 @@ export default function Dashboard({
     yMax === "" ? "auto" : Number(yMax) / 100,
   ];
 
-  const driverForecastList = driverForecasts?.drivers ?? [];
+  // 前値(AR項)はシナリオ操作の対象外。ドライバー選択・スライダー・要因分解から除外。
+  const driverForecastList = (driverForecasts?.drivers ?? []).filter(
+    (d) => !isBaselineDriver(d.driver),
+  );
   const activeDriver =
     driverForecastList.find((d) => d.driver === selectedDriver) ??
     driverForecastList[0];
 
-  const sliders: DriverSliderSpec[] = driverIds.map((id) => {
+  const sliders: DriverSliderSpec[] = driverIds
+    .filter((id) => !isBaselineDriver(id))
+    .map((id) => {
     const cls = driverClass(id);
     const cfg = SPAN_BY_CLASS[cls];
     const dflt = defaultOf[id] ?? 0;
@@ -293,13 +302,13 @@ export default function Dashboard({
   const contribMap = activeModel
     ? decompose(fanModels[activeCat], driversAt)
     : {};
-  const contributions: Contribution[] = (activeModel?.drivers ?? []).map(
-    (d) => ({
+  const contributions: Contribution[] = (activeModel?.drivers ?? [])
+    .filter((d) => !isBaselineDriver(d.driver))
+    .map((d) => ({
       driver: d.driver,
       label: labelOf[d.driver] ?? d.driver,
       value: contribMap[d.driver] ?? 0,
-    }),
-  );
+    }));
 
   return (
     <main className="mx-auto flex max-w-screen-sm flex-col gap-6 p-4">
