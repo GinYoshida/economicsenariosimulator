@@ -13,6 +13,7 @@ cat01（食料／被服）コードも併せて印字する。
 from __future__ import annotations
 
 import os
+import re
 import sys
 
 import httpx
@@ -522,6 +523,102 @@ def explore_estat_sentiment(client: httpx.Client, app_id: str) -> None:
                       cat_hints=["現状", "先行き", "方向性", "水準", "家計", "態度", "二人以上", "総世帯"])
 
 
+# ---------------------------------------------------------------------------
+# C-3: 内閣府 ESRI 消費動向調査（消費者態度指数）の CSV を探索する。
+#   消費者態度指数は e-Stat・統計ダッシュボードとも未収録のため、
+#   内閣府 ESRI サイトの CSV を直接取得する必要がある。ここでは
+#   時系列 CSV の URL・文字コード・列構成を突き止める。
+# ---------------------------------------------------------------------------
+
+CAO_CANDIDATE_PAGES = [
+    "https://www.esri.cao.go.jp/jp/stat/shouhi/shouhi.html",
+    "https://www.esri.cao.go.jp/jp/stat/menu_shouhi.html",
+    "https://www.esri.cao.go.jp/jp/stat/shouhi/menu_shouhi.html",
+    "https://www.esri.cao.go.jp/jp/stat/shouhi/2023/2023_shouhi.html",
+]
+
+# CSV/Excel リンクの手がかり（アンカーテキスト or ファイル名に含まれ得る語）。
+CAO_LINK_HINTS = ["態度", "時系列", "二人以上", "総世帯", "consumer", "attitude",
+                  "季節調整", "原数値", "csv"]
+
+
+def _decode_bytes(data: bytes) -> str:
+    for enc in ("utf-8", "cp932", "shift_jis", "euc-jp"):
+        try:
+            return data.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return data.decode("utf-8", errors="replace")
+
+
+def _abs_url(base: str, href: str) -> str:
+    if href.startswith("http"):
+        return href
+    if href.startswith("/"):
+        return "https://www.esri.cao.go.jp" + href
+    # base ページのディレクトリに相対解決。
+    root = base.rsplit("/", 1)[0]
+    while href.startswith("../"):
+        href = href[3:]
+        root = root.rsplit("/", 1)[0]
+    return f"{root}/{href}"
+
+
+def explore_cao_cci(client: httpx.Client) -> None:
+    """内閣府 ESRI 消費動向調査ページから CSV/Excel リンクを抽出・診断する。"""
+    print("\n内閣府 ESRI 消費動向調査（消費者態度指数）探索")
+    link_re = re.compile(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
+                         re.IGNORECASE | re.DOTALL)
+    tag_re = re.compile(r"<[^>]+>")
+    found: dict[str, str] = {}  # url -> anchor text
+    for page in CAO_CANDIDATE_PAGES:
+        try:
+            r = client.get(page, timeout=60, follow_redirects=True)
+        except httpx.HTTPError as e:
+            print(f"  [page] {page} -> ERROR {e}")
+            continue
+        if r.status_code != 200:
+            print(f"  [page] {page} -> HTTP {r.status_code}")
+            continue
+        html = _decode_bytes(r.content)
+        print(f"  [page] {page} -> {r.status_code}, {len(html)} chars")
+        for m in link_re.finditer(html):
+            href, text = m.group(1), tag_re.sub("", m.group(2)).strip()
+            low = href.lower()
+            if not (low.endswith(".csv") or low.endswith(".xls")
+                    or low.endswith(".xlsx")):
+                continue
+            url = _abs_url(page, href)
+            found.setdefault(url, text)
+
+    print(f"\n  CSV/Excel リンク {len(found)} 件（手がかり優先で表示）:")
+    def score(item):
+        url, text = item
+        blob = (url + " " + text).lower()
+        return sum(1 for h in CAO_LINK_HINTS if h.lower() in blob)
+    ranked = sorted(found.items(), key=score, reverse=True)
+    for url, text in ranked[:40]:
+        print(f"    - [{text[:40]}] {url}")
+
+    # 見込みの高い CSV を数件、実際に取得して先頭を印字（列構成・文字コード確認）。
+    print("\n  -- 上位 CSV の中身プレビュー --")
+    csv_urls = [u for u, _ in ranked if u.lower().endswith(".csv")][:4]
+    for url in csv_urls:
+        try:
+            r = client.get(url, timeout=60, follow_redirects=True)
+        except httpx.HTTPError as e:
+            print(f"  [csv] {url} -> ERROR {e}")
+            continue
+        if r.status_code != 200:
+            print(f"  [csv] {url} -> HTTP {r.status_code}")
+            continue
+        text = _decode_bytes(r.content)
+        lines = text.splitlines()
+        print(f"\n  == {url} ({len(r.content)} bytes, {len(lines)} 行) ==")
+        for ln in lines[:12]:
+            print(f"     {ln[:140]}")
+
+
 def main() -> int:
     app_id = os.environ.get("ESTAT_APP_ID", "").strip()
     try:
@@ -542,6 +639,9 @@ def main() -> int:
                     sample = [(c, n) for c, n, _ in pairs if kw in n][:5]
                     print(f"  vocab '{kw}': {sum(1 for _, n, _ in pairs if kw in n)} 件"
                           f" e.g. {[n for _, n in sample]}")
+
+            # C-3: 内閣府 ESRI 消費動向調査（消費者態度指数）CSV を探索。
+            explore_cao_cci(client)
     except httpx.HTTPError as e:
         print(f"HTTP error: {e}", file=sys.stderr)
         return 1
