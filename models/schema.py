@@ -132,6 +132,15 @@ class RollingPoint(BaseModel):
     actual: float | None = None  # 対象月の実績（過去のみ・被覆検証用）
 
 
+class BlendParam(BaseModel):
+    """(category, h) ごとのナイーブ縮約重み w と、ブレンド後OOS誤差std。"""
+
+    category: str
+    h: int
+    w: float   # 最終 = w·モデル + (1−w)·ナイーブ
+    sd: float  # ブレンド後の予測標準偏差（帯幅）
+
+
 class RollingForecastFile(BaseModel):
     """rolling_forecast.json のルート。各 (category, h, target) の予測＋実績。"""
 
@@ -139,4 +148,5 @@ class RollingForecastFile(BaseModel):
     horizon: int
     target_months: int
     points: list[RollingPoint]
+    blend: list[BlendParam] = []
 

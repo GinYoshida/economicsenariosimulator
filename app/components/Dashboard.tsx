@@ -119,6 +119,14 @@ export default function Dashboard({
   }, [rolling]);
   const hasRolling = (rolling?.points?.length ?? 0) > 0;
 
+  // ナイーブ縮約: (category|h) -> {w, sd}
+  const blendMap = useMemo(() => {
+    const m: Record<string, { w: number; sd: number }> = {};
+    for (const b of rolling?.blend ?? [])
+      m[`${b.category}|${b.h}`] = { w: b.w, sd: b.sd };
+    return m;
+  }, [rolling]);
+
   const driverIds = useMemo(
     () =>
       Array.from(
@@ -230,6 +238,10 @@ export default function Dashboard({
     sdConst: number,
   ): CategoryRow[] {
     const roll = (date: string) => rollMap[`${cat}|${hSel}|${date}`];
+    const b = blendMap[`${cat}|${hSel}`];
+    const naiveNow = baseline.history.length
+      ? actualOf(baseline.history[baseline.history.length - 1])
+      : 0;
     const out: CategoryRow[] = [];
     for (const h of baseline.history) {
       const r = hasRolling ? roll(h.date) : undefined;
@@ -241,16 +253,18 @@ export default function Dashboard({
         sd: r ? r.sd : sdConst,
       });
     }
-    // 未来はシナリオ反映の前方予測（中心・帯ともプリセット/スライダーで動く）。
+    // 未来はシナリオ反映の前方予測（中心はプリセット/スライダーで動く）。
+    // ナイーブ縮約 w を適用：中心 = w·モデル + (1−w)·直近実測、帯は縮約後OOS std。
     for (let k = 0; k < hSel; k++) {
       const p = fan[k];
       if (!p) break;
+      const center = b ? b.w * p.mean + (1 - b.w) * naiveNow : p.mean;
       out.push({
         date: p.date,
         kind: "forecast",
         actual: null,
-        center: p.mean,
-        sd: (p.high - p.low) / (2 * z),
+        center,
+        sd: b ? b.sd : (p.high - p.low) / (2 * z),
       });
     }
     return out.filter((r) => r.kind === "forecast" || r.date >= cutoff);
@@ -461,7 +475,8 @@ export default function Dashboard({
             再学習＋状態空間で{hSel}カ月外挿した予測」{hasRolling ? "（拡張窓ローリング・基準前提）" : "（近似・バッチ生成前）"}
             を実績（実線＋〇）と重ね、外れても帯に収まるかを見ます。
             <b>右＝シナリオ予測</b>：<b>楽観/悲観・スライダーがここに反映</b>されます（過去は実測なので不変）。
-            予測中心＝破線、帯は<b>信頼度別（50/80/95%）</b>に色分け。凡例クリックで表示切替。
+            予測は<b>ナイーブ（直近値）へ縮約</b>（w をカテゴリ・期間別にバックテストで最適化。食料はほぼナイーブ、
+            衣料はモデル寄り）。予測中心＝破線、帯は<b>信頼度別（50/80/95%）</b>に色分け。凡例クリックで表示切替。
           </p>
 
           <DriverSliders sliders={sliders} onChange={onSlider} />

@@ -36,6 +36,7 @@ from models.schema import (
     CategoryModel,
     Coefficients,
     DriverCoef,
+    BlendParam,
     DriverForecastFile,
     RollingForecastFile,
     RollingPoint,
@@ -339,8 +340,8 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
         drivers=driver_forecasts,
     )
 
-    # --- rolling_forecast.json（拡張窓ローリング h か月先予測・検証用） ---
-    rolling_points = build_rolling_forecasts(
+    # --- rolling_forecast.json（拡張窓ローリング h か月先予測・ナイーブ縮約） ---
+    rolling_points, rolling_blend = build_rolling_forecasts(
         panel,
         categories,
         CATEGORY_DRIVERS,
@@ -354,6 +355,7 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
         horizon=FORECAST_HORIZON,
         target_months=ROLLING_TARGET_MONTHS,
         points=[RollingPoint(**p) for p in rolling_points],
+        blend=[BlendParam(**b) for b in rolling_blend],
     )
 
     paths = {

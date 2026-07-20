@@ -31,7 +31,7 @@ UNITS = {"cpi.food": "index", "cpi.clothing": "index"}
 
 def test_rolling_returns_points_for_each_category_and_horizon():
     panel = _panel()
-    pts = build_rolling_forecasts(
+    pts, _blend = build_rolling_forecasts(
         panel,
         ["food", "clothing"],
         CATEGORY_DRIVERS,
@@ -55,7 +55,7 @@ def test_rolling_returns_points_for_each_category_and_horizon():
 def test_rolling_band_widens_with_horizon():
     # For a fixed origin, sd at h=6 should exceed sd at h=1 (drivers extrapolated).
     panel = _panel()
-    pts = build_rolling_forecasts(
+    pts, _blend = build_rolling_forecasts(
         panel,
         ["food"],
         CATEGORY_DRIVERS,
@@ -80,7 +80,7 @@ def test_rolling_band_widens_with_horizon():
 
 def test_rolling_actual_present_for_past_targets():
     panel = _panel()
-    pts = build_rolling_forecasts(
+    pts, _blend = build_rolling_forecasts(
         panel,
         ["food"],
         CATEGORY_DRIVERS,

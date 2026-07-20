@@ -20,16 +20,11 @@ import pandas as pd
 
 from models.driver_forecast import build_driver_forecasts
 from models.features import TARGET_BY_CATEGORY, make_features
-from models.ols import fit_ols, predict
+from models.ols import fit_ols
 
 
 def _iso(ts: pd.Timestamp) -> str:
     return ts.date().isoformat()
-
-
-def _resid_sigma(fit, X: pd.DataFrame, y: pd.Series) -> float:
-    resid = y.to_numpy(dtype=float) - predict(fit, X)
-    return float(np.sqrt(np.mean(resid**2))) if len(resid) else 0.0
 
 
 def build_rolling_forecasts(
@@ -42,13 +37,18 @@ def build_rolling_forecasts(
     horizon: int = 12,
     target_months: int = 48,
     min_train: int = 36,
-) -> list[dict]:
-    """各 (category, h, target) の {mean, sd, actual} のリストを返す。
+) -> tuple[list[dict], list[dict]]:
+    """``(points, blend)`` を返す。
+
+    points: 各 (category, h, target) の {mean, sd, actual}。mean は
+      ``w·モデル + (1−w)·ナイーブ`` のブレンド、sd はブレンド後のOOS誤差std。
+    blend: 各 (category, h) の {w, sd}（フロントの未来予測でも同じ縮約を使う）。
 
     起点 O は「対象を直近 ``target_months`` か月分カバーできる範囲」を月次で走査する。
+    ナイーブ＝起点 O 時点で既知の直近実測値（h先 persistence）。
     """
     if panel.empty:
-        return []
+        return [], []
     index = panel.index
     last = index.max()
     origin_start = (last - pd.DateOffset(months=target_months + horizon)).normalize()
@@ -62,7 +62,7 @@ def build_rolling_forecasts(
         default=0,
     )
 
-    points: list[dict] = []
+    raw: list[dict] = []  # {category, h, date, model, naive, actual}
     for origin in origins:
         ptrunc = panel[panel.index <= origin]
         # O 時点までのデータで各ドライバーを horizon か月先まで状態空間予測。
@@ -97,32 +97,67 @@ def build_rolling_forecasts(
             if len(y) < min_train:
                 continue
             fit = fit_ols(X, y)
-            resid = _resid_sigma(fit, X, y)
             coefs = {col: fit.coefs[f"{col}__lag{lag}"] for col, lag in lags.items()}
             tcol = TARGET_BY_CATEGORY[cat]
+            tser = ptrunc[tcol].dropna()
+            if tser.empty:
+                continue
+            naive = float(tser.iloc[-1])  # 起点で既知の直近実測（h先ナイーブ）
 
             for h in range(1, horizon + 1):
                 target = (origin + pd.DateOffset(months=h)).normalize()
-                mean = fit.intercept
-                var = resid * resid
+                model = fit.intercept
                 for col, lag in lags.items():
                     ddate = _iso((target - pd.DateOffset(months=lag)).normalize())
                     fv = lookup.get(col, {}).get(ddate)
                     if fv is not None:
-                        mean += coefs[col] * fv[0]
-                        var += coefs[col] ** 2 * fv[1] ** 2
+                        model += coefs[col] * fv[0]
                 actual = None
                 if tcol in panel.columns and target in panel.index:
                     av = panel.loc[target, tcol]
                     actual = None if pd.isna(av) else float(av)
-                points.append(
+                raw.append(
                     {
                         "category": cat,
                         "h": h,
                         "date": _iso(target),
-                        "mean": float(mean),
-                        "sd": float(np.sqrt(max(var, 0.0))),
+                        "model": float(model),
+                        "naive": naive,
                         "actual": actual,
                     }
                 )
-    return points
+
+    # (category, h) ごとにナイーブへの縮約重み w をOOSで最適化（L2閉形式）。
+    from collections import defaultdict
+
+    groups: dict[tuple[str, int], list[dict]] = defaultdict(list)
+    for r in raw:
+        groups[(r["category"], r["h"])].append(r)
+
+    points: list[dict] = []
+    blend: list[dict] = []
+    for (cat, h), rs in sorted(groups.items()):
+        fit_rows = [r for r in rs if r["actual"] is not None]
+        num = den = 0.0
+        for r in fit_rows:
+            d = r["model"] - r["naive"]
+            num += d * (r["actual"] - r["naive"])
+            den += d * d
+        w = (num / den) if den > 1e-12 else 0.0
+        w = min(1.0, max(0.0, w))
+        errs = [w * r["model"] + (1.0 - w) * r["naive"] - r["actual"] for r in fit_rows]
+        sd = float(np.sqrt(np.mean(np.square(errs)))) if errs else 0.0
+        blend.append({"category": cat, "h": h, "w": float(w), "sd": sd})
+        for r in rs:
+            mean = w * r["model"] + (1.0 - w) * r["naive"]
+            points.append(
+                {
+                    "category": cat,
+                    "h": h,
+                    "date": r["date"],
+                    "mean": float(mean),
+                    "sd": sd,
+                    "actual": r["actual"],
+                }
+            )
+    return points, blend

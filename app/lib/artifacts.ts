@@ -163,11 +163,18 @@ export type RollingPoint = {
   sd: number;
   actual?: number | null;
 };
+export type BlendParam = {
+  category: string;
+  h: number;
+  w: number; // 最終 = w·モデル + (1−w)·ナイーブ
+  sd: number;
+};
 export type RollingForecastFile = {
   generated_at: string;
   horizon: number;
   target_months: number;
   points: RollingPoint[];
+  blend?: BlendParam[];
 };
 
 /** rolling_forecast.json（拡張窓ローリング検証）をロード。未生成なら null。 */
