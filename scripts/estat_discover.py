@@ -728,10 +728,27 @@ def explore_cao_cci_estat(client: httpx.Client, app_id: str) -> None:
     for t in bare:
         seen.setdefault(str(t.get("@id")), t)
     # searchWord でも補完（別統計コードに載る態度指数表があれば拾う）。
-    for w in ("消費者態度指数", "消費動向調査 消費者態度指数", "消費動向調査 時系列"):
-        for t in _search_tables_global(client, app_id, w):
+    search_words = ("消費者態度指数", "消費者態度指数 二人以上", "消費動向調査",
+                    "消費者意識指標", "消費者マインド")
+    per_word: dict[str, list[dict]] = {}
+    for w in search_words:
+        got = _search_tables_global(client, app_id, w, limit="80")
+        per_word[w] = got
+        for t in got:
             seen.setdefault(str(t.get("@id")), t)
     print(f"  candidates: {len(seen)} 件（bare={len(bare)}）")
+
+    # 「消費動向調査」検索の内訳を名称で確認（純粋な態度指数表が別統計コードにないか）。
+    print("\n  -- searchWord 内訳（態度/意識/世帯 を含む名称のみ）--")
+    for w, got in per_word.items():
+        marks = []
+        for t in got:
+            _tid, name, _c, _s = _describe(t)
+            if any(h in name for h in ("態度", "意識", "マインド", "世帯", "消費動向調査")):
+                marks.append((str(t.get("@id")), name))
+        print(f"  [{w}] {len(got)}件中 手がかり一致 {len(marks)}件:")
+        for tid, name in marks[:10]:
+            print(f"      id={tid} | {name[:76]}")
 
     rows = []
     for tid, t in seen.items():
@@ -758,14 +775,15 @@ def explore_cao_cci_estat(client: httpx.Client, app_id: str) -> None:
             print(f"  == id={tid} time軸取得エラー: {e}")
             continue
         print(f"  == id={tid} time軸='{axis}' n={n} span[{first} .. {last}] | {name[:48]}")
-        if "態度指数" in name and len(inspect_ids) < 2:
+        if ("態度指数" in name or "個別系列" in name) and len(inspect_ids) < 3:
             inspect_ids.append(tid)
 
-    # 態度指数の本命表の軸（世帯区分・季節調整/原数値・指標種別）を精査。
+    # 態度指数の本命表 or 景気動向指数個別系列の軸を精査（態度指数の系列コード特定）。
     for sid in inspect_ids:
         inspect_table(client, app_id, sid,
                       cat_hints=["態度", "二人以上", "総世帯", "季節調整", "原数値",
-                                 "暮らし向き", "収入", "雇用", "買い時", "指数"])
+                                 "暮らし向き", "収入", "雇用", "買い時", "指数",
+                                 "消費者"])
 
 
 def main() -> int:
