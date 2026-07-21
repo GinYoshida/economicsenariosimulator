@@ -23,8 +23,9 @@ from etl.provenance import Source
 from etl.registry import REGISTRY
 
 # 列ラベル -> 内部 series_id
+# 注: 消費者態度指数(cao.cci.attitude)は e-Stat 景気動向指数個別系列(estat経由)で
+#     取得するため、この Excel マップからは除外（二重ソースを避ける）。
 CCI_COLUMN_MAP: dict[str, str] = {
-    "消費者態度指数": "cao.cci.attitude",
     "暮らし向き": "cao.cci.livelihood",
     "収入の増え方": "cao.cci.income",
     "雇用環境": "cao.cci.employment",

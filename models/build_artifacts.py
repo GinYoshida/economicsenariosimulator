@@ -93,7 +93,7 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
         "household.food.real_yoy": AR_LAG,  # 前値（ナイーブ土台）
         "cpi.food": 1,
         "wage.cash_earnings": 2,   # 名目給与YoY（公表ラグ約5-6週→2か月ラグ）
-        "cao.cci.attitude": 1,     # 消費者態度指数（現状 e-Stat未収録→取得時のみ）
+        "cao.cci.attitude": 1,     # 消費者態度指数（景気動向指数個別系列・翌月上旬公表→1か月ラグ）
         "cao.watcher.current": 1,  # 景気ウォッチャー現状DI（翌月上旬公表→1か月ラグ）
         "cao.watcher.outlook": 1,
         "fut.wheat": 2,

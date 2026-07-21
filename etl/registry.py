@@ -180,16 +180,27 @@ _SPECS: list[SourceSpec] = [
         # series_code は M1-4 で確定
         fetch={"series_code": "BOJ_USDJPY_SPOT"},
     ),
-    # --- 内閣府: 消費動向調査（消費者態度指数＋構成DI） ---
+    # --- 内閣府: 消費者態度指数（e-Stat 景気動向指数 個別系列より） ---
+    # 消費動向調査の態度指数は e-Stat に単独表がなく、ESRI もPDFのみ公開。
+    # ただし景気動向指数の個別系列表 0003446462 に「先行系列 L6 消費者態度指数」
+    # として月次(1975-)水準で収録されているため、これを estat 経由で取得する。
+    #   tab=200 系列の数値 / cat01=1060 (先行)_L6消費者態度指数
     _spec(
         series_id="cao.cci.attitude",
-        name="内閣府 消費動向調査",
-        url=_CAO_CCI_URL,
-        connector="cao",
+        name="内閣府 消費動向調査（景気動向指数 個別系列）",
+        url="https://www.esri.cao.go.jp/jp/stat/di/di.html",
+        connector="estat",
         license=_CAO_LICENSE,
-        unit="di",
+        unit="index",
         frequency="monthly",
-        fetch={"dataset": "cci_consumer_attitude"},  # M1-5 で確定
+        fetch={
+            "search_word": "景気動向指数 個別系列の数値 消費者態度指数",
+            "stats_data_id": "0003446462",
+            "extra_params": {
+                "cdTab": "200",      # 系列の数値
+                "cdCat01": "1060",   # (先行)_L6 消費者態度指数
+            },
+        },
     ),
     _spec(
         series_id="cao.cci.livelihood",

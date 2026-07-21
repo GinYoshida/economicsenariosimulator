@@ -23,13 +23,15 @@ def _bytes(p: Path) -> bytes:
 def test_parse_cci_extracts_all_indicators():
     series = parse_cao_excel(_bytes(CCI_FIXTURE), CCI_COLUMN_MAP)
     assert set(series.keys()) == set(CCI_COLUMN_MAP.values())
-    df = series["cao.cci.attitude"]
+    # 態度指数は e-Stat 経由に移したため Excel マップ対象外。
+    assert "cao.cci.attitude" not in series
+    df = series["cao.cci.livelihood"]
     assert list(df.columns) == ["date", "value"]
     assert len(df) == 5
     assert df["date"].iloc[0] == pd.Timestamp("2024-01-01")
     assert (df["date"].dt.day == 1).all()
     assert df["date"].is_monotonic_increasing
-    assert df.set_index("date")["value"].loc["2024-01-01"] == pytest.approx(38.1)
+    assert df.set_index("date")["value"].loc["2024-01-01"] == pytest.approx(36.0)
 
 
 def test_parse_cci_missing_cell_is_nan():
@@ -52,8 +54,8 @@ def test_fetch_cao_cci_returns_df_source_pairs():
     pairs = fetch_cao_cci(_bytes(CCI_FIXTURE))
     assert len(pairs) == len(CCI_COLUMN_MAP)
     by_id = {src.series_id: (df, src) for df, src in pairs}
-    assert "cao.cci.attitude" in by_id
-    df, src = by_id["cao.cci.attitude"]
+    assert "cao.cci.livelihood" in by_id
+    df, src = by_id["cao.cci.livelihood"]
     assert len(df) == 5
     assert src.name == "内閣府 消費動向調査"
     assert src.unit == "di"
