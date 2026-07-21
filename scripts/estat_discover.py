@@ -532,9 +532,9 @@ def explore_estat_sentiment(client: httpx.Client, app_id: str) -> None:
 
 CAO_CANDIDATE_PAGES = [
     "https://www.esri.cao.go.jp/jp/stat/shouhi/shouhi.html",
-    "https://www.esri.cao.go.jp/jp/stat/menu_shouhi.html",
     "https://www.esri.cao.go.jp/jp/stat/shouhi/menu_shouhi.html",
-    "https://www.esri.cao.go.jp/jp/stat/shouhi/2023/2023_shouhi.html",
+    "https://www.esri.cao.go.jp/jp/stat/menu.html",
+    "https://www.esri.cao.go.jp/index.html",
 ]
 
 # CSV/Excel リンクの手がかり（アンカーテキスト or ファイル名に含まれ得る語）。
@@ -564,59 +564,118 @@ def _abs_url(base: str, href: str) -> str:
     return f"{root}/{href}"
 
 
-def explore_cao_cci(client: httpx.Client) -> None:
-    """内閣府 ESRI 消費動向調査ページから CSV/Excel リンクを抽出・診断する。"""
-    print("\n内閣府 ESRI 消費動向調査（消費者態度指数）探索")
-    link_re = re.compile(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
-                         re.IGNORECASE | re.DOTALL)
-    tag_re = re.compile(r"<[^>]+>")
-    found: dict[str, str] = {}  # url -> anchor text
-    for page in CAO_CANDIDATE_PAGES:
-        try:
-            r = client.get(page, timeout=60, follow_redirects=True)
-        except httpx.HTTPError as e:
-            print(f"  [page] {page} -> ERROR {e}")
-            continue
-        if r.status_code != 200:
-            print(f"  [page] {page} -> HTTP {r.status_code}")
-            continue
-        html = _decode_bytes(r.content)
-        print(f"  [page] {page} -> {r.status_code}, {len(html)} chars")
-        for m in link_re.finditer(html):
-            href, text = m.group(1), tag_re.sub("", m.group(2)).strip()
-            low = href.lower()
-            if not (low.endswith(".csv") or low.endswith(".xls")
-                    or low.endswith(".xlsx")):
-                continue
-            url = _abs_url(page, href)
-            found.setdefault(url, text)
+LINK_RE = re.compile(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
+                     re.IGNORECASE | re.DOTALL)
+TAG_RE = re.compile(r"<[^>]+>")
 
-    print(f"\n  CSV/Excel リンク {len(found)} 件（手がかり優先で表示）:")
+# 現行の月次時系列ページへ辿るためのナビゲーション手がかり（HTMLサブページ）。
+NAV_HINTS = ["態度", "時系列", "結果", "最新", "統計表", "データ", "月",
+             "二人以上", "調査結果"]
+
+
+def _page_links(client: httpx.Client, page: str):
+    """(status, [(abs_url, anchor_text)]) を返す。取得失敗時は (None, [])。"""
+    try:
+        r = client.get(page, timeout=60, follow_redirects=True)
+    except httpx.HTTPError as e:
+        print(f"  [page] {page} -> ERROR {e}")
+        return None, []
+    if r.status_code != 200:
+        print(f"  [page] {page} -> HTTP {r.status_code}")
+        return r.status_code, []
+    html = _decode_bytes(r.content)
+    print(f"  [page] {page} -> 200, {len(html)} chars")
+    out = []
+    for m in LINK_RE.finditer(html):
+        href, text = m.group(1), TAG_RE.sub("", m.group(2)).strip()
+        out.append((_abs_url(page, href), text))
+    return 200, out
+
+
+def _is_data_link(url: str) -> bool:
+    low = url.lower()
+    return low.endswith((".csv", ".xls", ".xlsx"))
+
+
+def explore_cao_cci(client: httpx.Client) -> None:
+    """内閣府 ESRI 消費動向調査から現行の時系列データ(CSV/Excel)を2段クロールで探す。"""
+    print("\n内閣府 ESRI 消費動向調査（消費者態度指数）探索")
+    data_links: dict[str, str] = {}   # url -> anchor text
+    nav_links: dict[str, str] = {}    # 候補サブページ url -> text
+
+    # 1段目: トップ候補ページからデータリンク＋ナビゲーションを収集。
+    for page in CAO_CANDIDATE_PAGES:
+        status, links = _page_links(client, page)
+        if status != 200:
+            continue
+        for url, text in links:
+            if _is_data_link(url):
+                data_links.setdefault(url, text)
+            elif url.lower().endswith((".html", ".htm", "/")):
+                blob = (url + " " + text)
+                if any(h in blob for h in NAV_HINTS) and "esri.cao.go.jp" in url:
+                    nav_links.setdefault(url, text)
+
+    # ナビゲーションを手がかり順で最大12件、2段目としてクロール。
+    def nav_score(item):
+        url, text = item
+        return sum(1 for h in NAV_HINTS if h in (url + " " + text))
+    nav_ranked = sorted(nav_links.items(), key=nav_score, reverse=True)
+    print(f"\n  ナビ候補 {len(nav_ranked)} 件（上位のみ2段目クロール）:")
+    for url, text in nav_ranked[:12]:
+        print(f"    > [{text[:30]}] {url}")
+    for url, _ in nav_ranked[:12]:
+        _status, links = _page_links(client, url)
+        for u, t in links:
+            if _is_data_link(u):
+                data_links.setdefault(u, t)
+
+    # データリンクを手がかり＋新しさ（年）でスコア表示。
     def score(item):
         url, text = item
         blob = (url + " " + text).lower()
-        return sum(1 for h in CAO_LINK_HINTS if h.lower() in blob)
-    ranked = sorted(found.items(), key=score, reverse=True)
-    for url, text in ranked[:40]:
-        print(f"    - [{text[:40]}] {url}")
+        s = sum(1 for h in CAO_LINK_HINTS if h.lower() in blob)
+        for y in ("2026", "2025", "2024"):
+            if y in url or y in text:
+                s += 3
+        if url.lower().endswith((".csv", ".xlsx")):
+            s += 1  # 現行は csv/xlsx が多い
+        return s
+    ranked = sorted(data_links.items(), key=score, reverse=True)
+    print(f"\n  データ(CSV/Excel)リンク {len(ranked)} 件（手がかり優先）:")
+    for url, text in ranked[:50]:
+        print(f"    - [{text[:44]}] {url}")
 
-    # 見込みの高い CSV を数件、実際に取得して先頭を印字（列構成・文字コード確認）。
-    print("\n  -- 上位 CSV の中身プレビュー --")
-    csv_urls = [u for u, _ in ranked if u.lower().endswith(".csv")][:4]
-    for url in csv_urls:
+    # 上位を実取得。CSVは先頭行を、Excelは pandas で列・先頭を印字。
+    print("\n  -- 上位データのプレビュー --")
+    for url, _ in ranked[:6]:
         try:
             r = client.get(url, timeout=60, follow_redirects=True)
         except httpx.HTTPError as e:
-            print(f"  [csv] {url} -> ERROR {e}")
+            print(f"  [get] {url} -> ERROR {e}")
             continue
         if r.status_code != 200:
-            print(f"  [csv] {url} -> HTTP {r.status_code}")
+            print(f"  [get] {url} -> HTTP {r.status_code}")
             continue
-        text = _decode_bytes(r.content)
-        lines = text.splitlines()
-        print(f"\n  == {url} ({len(r.content)} bytes, {len(lines)} 行) ==")
-        for ln in lines[:12]:
-            print(f"     {ln[:140]}")
+        low = url.lower()
+        if low.endswith(".csv"):
+            lines = _decode_bytes(r.content).splitlines()
+            print(f"\n  == {url} ({len(r.content)}B, {len(lines)}行 CSV) ==")
+            for ln in lines[:14]:
+                print(f"     {ln[:150]}")
+        else:
+            try:
+                import io
+
+                import pandas as pd
+                xls = pd.ExcelFile(io.BytesIO(r.content))
+                print(f"\n  == {url} ({len(r.content)}B, sheets={xls.sheet_names}) ==")
+                df = xls.parse(xls.sheet_names[0], header=None, nrows=14)
+                for _, row in df.iterrows():
+                    cells = [str(v) for v in row.tolist()[:8]]
+                    print("     " + " | ".join(cells)[:150])
+            except Exception as e:  # noqa: BLE001
+                print(f"  [xls] {url} -> parse error {e}")
 
 
 def main() -> int:
