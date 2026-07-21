@@ -597,38 +597,60 @@ def _is_data_link(url: str) -> bool:
     return low.endswith((".csv", ".xls", ".xlsx"))
 
 
+SHOUHI_TOP = "https://www.esri.cao.go.jp/jp/stat/shouhi/shouhi.html"
+SHOUHI_DIR = "https://www.esri.cao.go.jp/jp/stat/shouhi/"
+
+
 def explore_cao_cci(client: httpx.Client) -> None:
-    """内閣府 ESRI 消費動向調査から現行の時系列データ(CSV/Excel)を2段クロールで探す。"""
+    """内閣府 ESRI 消費動向調査から現行の時系列データ(CSV/Excel)を探す。
+
+    消費動向調査セクション(/jp/stat/shouhi/)に限定し、shouhi.html の全アンカーを
+    列挙 → 同セクションのサブページを2段目クロール → 連番 shouhi{N} を直接存在確認。
+    """
     print("\n内閣府 ESRI 消費動向調査（消費者態度指数）探索")
     data_links: dict[str, str] = {}   # url -> anchor text
-    nav_links: dict[str, str] = {}    # 候補サブページ url -> text
+    nav_links: dict[str, str] = {}    # /shouhi/ 配下のサブページ url -> text
 
-    # 1段目: トップ候補ページからデータリンク＋ナビゲーションを収集。
-    for page in CAO_CANDIDATE_PAGES:
-        status, links = _page_links(client, page)
-        if status != 200:
-            continue
-        for url, text in links:
-            if _is_data_link(url):
-                data_links.setdefault(url, text)
-            elif url.lower().endswith((".html", ".htm", "/")):
-                blob = (url + " " + text)
-                if any(h in blob for h in NAV_HINTS) and "esri.cao.go.jp" in url:
-                    nav_links.setdefault(url, text)
+    status, top_links = _page_links(client, SHOUHI_TOP)
+    # shouhi.html の全アンカーを列挙（現行データの参照形式を目視で確認する）。
+    print(f"\n  shouhi.html 全アンカー {len(top_links)} 件:")
+    for url, text in top_links:
+        tail = url.split("esri.cao.go.jp", 1)[-1]
+        print(f"    a[{text[:34]}] {tail}")
+    for url, text in top_links:
+        if _is_data_link(url):
+            data_links.setdefault(url, text)
+        elif url.lower().endswith((".html", ".htm")) and "/jp/stat/shouhi/" in url:
+            nav_links.setdefault(url, text)
 
-    # ナビゲーションを手がかり順で最大12件、2段目としてクロール。
-    def nav_score(item):
-        url, text = item
-        return sum(1 for h in NAV_HINTS if h in (url + " " + text))
-    nav_ranked = sorted(nav_links.items(), key=nav_score, reverse=True)
-    print(f"\n  ナビ候補 {len(nav_ranked)} 件（上位のみ2段目クロール）:")
-    for url, text in nav_ranked[:12]:
-        print(f"    > [{text[:30]}] {url}")
-    for url, _ in nav_ranked[:12]:
-        _status, links = _page_links(client, url)
+    # 2段目: /shouhi/ 配下のサブページのみクロール（他統計への逸脱を防ぐ）。
+    nav_ranked = sorted(
+        nav_links.items(),
+        key=lambda it: sum(1 for h in NAV_HINTS if h in (it[0] + " " + it[1])),
+        reverse=True,
+    )
+    print(f"\n  /shouhi/配下サブページ {len(nav_ranked)} 件（上位を2段目クロール）:")
+    for url, text in nav_ranked[:15]:
+        print(f"    > [{text[:34]}] {url.split('esri.cao.go.jp',1)[-1]}")
+    for url, _ in nav_ranked[:15]:
+        _s, links = _page_links(client, url)
         for u, t in links:
             if _is_data_link(u):
                 data_links.setdefault(u, t)
+
+    # 連番 shouhi{N} を直接存在確認（shouhi8.xls=サービス支出 が既知 → 態度指数は近番）。
+    print("\n  -- 連番 shouhi{N} の存在確認（HEAD相当のGET） --")
+    for n in range(1, 13):
+        for ext in (".xls", ".xlsx", ".csv"):
+            cand = f"{SHOUHI_DIR}shouhi{n}{ext}"
+            try:
+                rr = client.get(cand, timeout=40, follow_redirects=True)
+            except httpx.HTTPError:
+                continue
+            if rr.status_code == 200:
+                ctype = rr.headers.get("content-type", "")
+                print(f"    OK shouhi{n}{ext} ({len(rr.content)}B, {ctype})")
+                data_links.setdefault(cand, f"連番shouhi{n}")
 
     # データリンクを手がかり＋新しさ（年）でスコア表示。
     def score(item):
@@ -638,17 +660,19 @@ def explore_cao_cci(client: httpx.Client) -> None:
         for y in ("2026", "2025", "2024"):
             if y in url or y in text:
                 s += 3
+        if re.search(r"/shouhi\d+\.(xls|xlsx|csv)$", url.lower()):
+            s += 5  # 連番の統計表本体（時系列）を最優先
         if url.lower().endswith((".csv", ".xlsx")):
             s += 1  # 現行は csv/xlsx が多い
         return s
     ranked = sorted(data_links.items(), key=score, reverse=True)
     print(f"\n  データ(CSV/Excel)リンク {len(ranked)} 件（手がかり優先）:")
     for url, text in ranked[:50]:
-        print(f"    - [{text[:44]}] {url}")
+        print(f"    - [{text[:44]}] {url.split('esri.cao.go.jp',1)[-1]}")
 
     # 上位を実取得。CSVは先頭行を、Excelは pandas で列・先頭を印字。
     print("\n  -- 上位データのプレビュー --")
-    for url, _ in ranked[:6]:
+    for url, _ in ranked[:10]:
         try:
             r = client.get(url, timeout=60, follow_redirects=True)
         except httpx.HTTPError as e:
