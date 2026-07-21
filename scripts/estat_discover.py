@@ -778,6 +778,12 @@ def explore_cao_cci_estat(client: httpx.Client, app_id: str) -> None:
         if ("態度指数" in name or "個別系列" in name) and len(inspect_ids) < 3:
             inspect_ids.append(tid)
 
+    # 景気動向指数の個別系列テーブル（消費者態度指数を先行系列として収録・月次1975-2026）は
+    # 名称に「態度指数」を含まず上記ループから漏れるため、既知IDを明示的に精査する。
+    for known in ("0003446462", "0003446463"):
+        if known not in inspect_ids:
+            inspect_ids.append(known)
+
     # 態度指数の本命表 or 景気動向指数個別系列の軸を精査（態度指数の系列コード特定）。
     for sid in inspect_ids:
         inspect_table(client, app_id, sid,
