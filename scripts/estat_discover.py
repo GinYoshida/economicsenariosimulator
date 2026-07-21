@@ -702,29 +702,80 @@ def explore_cao_cci(client: httpx.Client) -> None:
                 print(f"  [xls] {url} -> parse error {e}")
 
 
+# ---------------------------------------------------------------------------
+# C-4: 消費動向調査（消費者態度指数）を e-Stat 本体で特定する。
+#   ESRI shouhi.html は「月次の世帯別・属性別統計表、長期時系列表」を
+#   e-Stat（tstat=000001014549 / 政府統計コード 00100405）へリンクしている。
+#   → 新規コネクタ不要、既存 estat 経路（getStatsData）で取得できる。
+# ---------------------------------------------------------------------------
+
+STATS_CODE_CAO_CCI = "00100405"  # 消費動向調査（内閣府）
+CCI_NAME_HINTS = ["態度指数", "二人以上", "総世帯", "意識指標", "時系列",
+                  "暮らし向き", "収入", "雇用", "買い時"]
+
+
+def explore_cao_cci_estat(client: httpx.Client, app_id: str) -> None:
+    """e-Stat 上の消費動向調査から消費者態度指数の現行月次表を特定する。"""
+    print("\n" + "=" * 72)
+    print(f"消費動向調査（消費者態度指数）e-Stat 探索 statsCode={STATS_CODE_CAO_CCI}")
+    if not app_id:
+        print("  ESTAT_APP_ID 未設定のためスキップ")
+        return
+
+    seen: dict[str, dict] = {}
+    # 全件列挙（searchWord では隠れる長期時系列表を確実に拾う）。
+    bare = _list_all_tables(client, app_id, STATS_CODE_CAO_CCI)
+    for t in bare:
+        seen.setdefault(str(t.get("@id")), t)
+    # searchWord でも補完（別統計コードに載る態度指数表があれば拾う）。
+    for w in ("消費者態度指数", "消費動向調査 消費者態度指数", "消費動向調査 時系列"):
+        for t in _search_tables_global(client, app_id, w):
+            seen.setdefault(str(t.get("@id")), t)
+    print(f"  candidates: {len(seen)} 件（bare={len(bare)}）")
+
+    rows = []
+    for tid, t in seen.items():
+        tid_s, name, cycle, survey = _describe(t)
+        rows.append((_end_year(survey), tid_s, name, cycle, survey))
+    rows.sort(key=lambda r: r[0], reverse=True)
+
+    # 態度指数/意識指標/時系列に該当する表を優先表示。
+    def is_cci(name: str) -> bool:
+        return any(h in name for h in CCI_NAME_HINTS)
+    cci_rows = [r for r in rows if is_cci(r[2])]
+    print(f"\n  態度指数/意識指標系の候補: {len(cci_rows)} 件")
+    for end, tid, name, cycle, survey in cci_rows[:25]:
+        print(f"  - id={tid} endYear={end} cycle={cycle} survey={survey} | {name[:74]}")
+
+    # 上位候補の time 軸（月次で直近まで伸びるか）を確認。
+    print("\n  -- 態度指数候補の time軸確認 --")
+    probe = cci_rows[:12] if cci_rows else rows[:12]
+    inspect_ids: list[str] = []
+    for end, tid, name, cycle, survey in probe:
+        try:
+            axis, n, first, last = _time_span(client, app_id, tid)
+        except httpx.HTTPError as e:
+            print(f"  == id={tid} time軸取得エラー: {e}")
+            continue
+        print(f"  == id={tid} time軸='{axis}' n={n} span[{first} .. {last}] | {name[:48]}")
+        if "態度指数" in name and len(inspect_ids) < 2:
+            inspect_ids.append(tid)
+
+    # 態度指数の本命表の軸（世帯区分・季節調整/原数値・指標種別）を精査。
+    for sid in inspect_ids:
+        inspect_table(client, app_id, sid,
+                      cat_hints=["態度", "二人以上", "総世帯", "季節調整", "原数値",
+                                 "暮らし向き", "収入", "雇用", "買い時", "指数"])
+
+
 def main() -> int:
     app_id = os.environ.get("ESTAT_APP_ID", "").strip()
     try:
         with httpx.Client() as client:
-            # C-1: e-Stat 本体で感情系（消費動向調査・景気ウォッチャー）の現行表を探索。
-            explore_estat_sentiment(client, app_id)
-
-            # C-2: 統計ダッシュボードの診断（感情系が別名で載っていないか、語彙を確認）。
-            print("\n統計ダッシュボード base=" + BASE_DASH)
-            pairs = _fetch_indicator_pairs(client)
-            if pairs:
-                explore_dashboard_group(
-                    client, pairs, DASH_SENTIMENT_KEYWORDS, "感情系ドライバー"
-                )
-                # 語彙診断: 広めの語で件数と名称サンプルを出す。
-                for kw in ["消費者態度", "景気ウォッチャー", "態度指数", "判断DI",
-                           "ウォッチャー", "消費動向"]:
-                    sample = [(c, n) for c, n, _ in pairs if kw in n][:5]
-                    print(f"  vocab '{kw}': {sum(1 for _, n, _ in pairs if kw in n)} 件"
-                          f" e.g. {[n for _, n in sample]}")
-
-            # C-3: 内閣府 ESRI 消費動向調査（消費者態度指数）CSV を探索。
-            explore_cao_cci(client)
+            # C-4: 消費動向調査（消費者態度指数）を e-Stat 本体で特定する（本命）。
+            #   ESRI サイトは PDF のみで、機械可読データは e-Stat に委譲されている
+            #   （shouhi.html→ tstat=000001014549）ことが C-1〜C-3 で判明した。
+            explore_cao_cci_estat(client, app_id)
     except httpx.HTTPError as e:
         print(f"HTTP error: {e}", file=sys.stderr)
         return 1
