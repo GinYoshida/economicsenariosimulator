@@ -19,7 +19,7 @@ from typing import Callable
 import duckdb
 import pandas as pd
 
-from etl.connectors import boj, dashboard, estat, futures
+from etl.connectors import boj, dashboard, estat, futures, weather
 from etl.provenance import Source
 from etl.registry import REGISTRY, SourceSpec
 from etl.store import init_db, write_series
@@ -85,11 +85,25 @@ def _fetch_futures(spec: SourceSpec, _app_id: str | None) -> tuple[pd.DataFrame,
     )
 
 
+def _fetch_weather(spec: SourceSpec, _app_id: str | None) -> tuple[pd.DataFrame, Source]:
+    f = spec.fetch
+    return weather.fetch_weather(
+        metric=f["metric"],
+        series_id=spec.series_id,
+        name=spec.name,
+        url=spec.url,
+        license=spec.license,
+        unit=spec.unit,
+        frequency=spec.frequency,
+    )
+
+
 DEFAULT_DISPATCHERS: dict[str, SeriesFetcher] = {
     "estat": _fetch_estat,
     "boj": _fetch_boj,
     "futures": _fetch_futures,
     "dashboard": _fetch_dashboard,
+    "weather": _fetch_weather,
 }
 
 
@@ -106,7 +120,8 @@ def run_etl(
     未確定パラメータ由来の ``ValueError`` は skip、その他の例外は failed に記録する。
     """
     init_db(con)
-    dispatchers = dispatchers or DEFAULT_DISPATCHERS
+    # None は「未指定＝既定を使う」。空dict {} は「明示的に空」（テストで使用）。
+    dispatchers = DEFAULT_DISPATCHERS if dispatchers is None else dispatchers
 
     written: list[str] = []
     skipped: list[tuple[str, str]] = []

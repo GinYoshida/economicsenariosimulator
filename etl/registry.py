@@ -11,7 +11,7 @@ BOJ の ``series_code`` は M1-4、内閣府の ``dataset`` は M1-5 で最終�
 
 from pydantic import BaseModel
 
-KNOWN_CONNECTORS: set[str] = {"estat", "boj", "cao", "futures", "dashboard"}
+KNOWN_CONNECTORS: set[str] = {"estat", "boj", "cao", "futures", "dashboard", "weather"}
 
 
 class SourceSpec(BaseModel):
@@ -32,12 +32,14 @@ _BOJ_URL = "https://www.stat-search.boj.or.jp/"
 _CAO_CCI_URL = "https://www.esri.cao.go.jp/jp/stat/shouhi/shouhi.html"
 _CAO_WATCHER_URL = "https://www5.cao.go.jp/keizai3/watcher/watcher_menu.html"
 _FUT_URL = "https://finance.yahoo.com/"
+_WEATHER_URL = "https://open-meteo.com/"
 
 _ESTAT_LICENSE = "政府統計（出典明示で利用可）"
 _DASH_LICENSE = "統計ダッシュボード（政府統計・出典明示で利用可）"
 _BOJ_LICENSE = "日本銀行（出典明示で利用可）"
 _CAO_LICENSE = "内閣府（出典明示で利用可）"
 _FUT_LICENSE = "Yahoo Finance terms of use"
+_WEATHER_LICENSE = "Open-Meteo（ERA5再解析・CC-BY 4.0）"
 
 
 def _spec(**kwargs) -> SourceSpec:
@@ -336,6 +338,29 @@ _SPECS: list[SourceSpec] = [
         unit="jpy_per_usd",
         frequency="monthly",
         fetch={"ticker": "JPY=X"},
+    ),
+    # --- 天候（Open-Meteo ERA5・公知の外生情報） ---
+    # 主要都市の日別気温・降水量から「経済活動を阻害し得る日の割合」を人口加重で
+    # 全国月次化。食料消費の前月差方向（酷暑・豪雨の供給/行動ショック）を補完する。
+    _spec(
+        series_id="weather.summer_days",
+        name="Open-Meteo（真夏日割合・全国人口加重）",
+        url=_WEATHER_URL,
+        connector="weather",
+        license=_WEATHER_LICENSE,
+        unit="ratio",
+        frequency="monthly",
+        fetch={"metric": "weather.summer_days"},   # 最高気温>=30℃ の日割合
+    ),
+    _spec(
+        series_id="weather.heavy_rain_days",
+        name="Open-Meteo（豪雨日割合・全国人口加重）",
+        url=_WEATHER_URL,
+        connector="weather",
+        license=_WEATHER_LICENSE,
+        unit="ratio",
+        frequency="monthly",
+        fetch={"metric": "weather.heavy_rain_days"},  # 日降水量>=50mm の日割合
     ),
 ]
 

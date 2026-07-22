@@ -21,7 +21,7 @@ import pandas as pd
 
 from etl.panel import build_panel
 from etl.store import list_series, read_series
-from models.features import TARGET_BY_CATEGORY, make_features
+from models.features import make_features
 from models.nowcast import nowcast_target
 from models.ols import FitResult, fit_ols, predict
 from etl.registry import REGISTRY
@@ -69,6 +69,8 @@ DRIVER_LABELS: dict[str, str] = {
     "cao.cci.durables": "耐久財買い時DI",
     "cao.watcher.current": "景気ウォッチャー現状DI",
     "cao.watcher.outlook": "景気ウォッチャー先行きDI",
+    "weather.summer_days": "真夏日割合",
+    "weather.heavy_rain_days": "豪雨日割合",
     "boj.policy_rate": "政策金利",
     "boj.usdjpy": "ドル円",
     "fut.wheat": "小麦先物",
@@ -96,6 +98,10 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
         "cao.cci.attitude": 1,     # 消費者態度指数（景気動向指数個別系列・翌月上旬公表→1か月ラグ）
         "cao.watcher.current": 1,  # 景気ウォッチャー現状DI（翌月上旬公表→1か月ラグ）
         "cao.watcher.outlook": 1,
+        # 天候（外生・公知）: 酷暑/豪雨の供給・行動ショックで食料の前月差方向を補完。
+        # 先月の天候は予測時に既知（lag1）→ 短期ホライズンで正当に効く。
+        "weather.summer_days": 1,
+        "weather.heavy_rain_days": 1,
         "fut.wheat": 2,
         "fut.soybean": 2,
         "boj.usdjpy": 1,

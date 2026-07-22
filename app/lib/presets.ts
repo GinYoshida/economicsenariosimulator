@@ -8,7 +8,14 @@ import type { DriverPath } from "@/app/lib/scenario";
 
 export type Preset = "optimistic" | "base" | "pessimistic";
 // "self" は目的変数の前値（AR項）。シナリオでは動かさない（＝0）。
-export type DriverClass = "sentiment" | "cost" | "rate" | "income" | "self";
+// "weather" は外生の天候（真夏日/豪雨割合）。景気シナリオでは動かさない（＝0）。
+export type DriverClass =
+  | "sentiment"
+  | "cost"
+  | "rate"
+  | "income"
+  | "self"
+  | "weather";
 
 type PresetConfig = {
   // 各種別の base からのシフト量（ドライバー自身の単位）。
@@ -17,19 +24,21 @@ type PresetConfig = {
   rate: number;
   income: number;
   self: number;
+  weather: number;
 };
 
 export const PRESETS: Record<Preset, PresetConfig> = {
   // income は名目給与YoY。楽観は賃上げ加速（+1pp）、悲観は減速（-1pp）。
-  // cost とは符号が逆（賃金上昇は消費に有利）。self（前値）は不変。
-  optimistic: { sentiment: +3, cost: -0.02, rate: 0, income: +0.01, self: 0 },
-  base: { sentiment: 0, cost: 0, rate: 0, income: 0, self: 0 },
-  pessimistic: { sentiment: -3, cost: +0.02, rate: +0.001, income: -0.01, self: 0 },
+  // cost とは符号が逆（賃金上昇は消費に有利）。self（前値）・weather（外生）は不変。
+  optimistic: { sentiment: +3, cost: -0.02, rate: 0, income: +0.01, self: 0, weather: 0 },
+  base: { sentiment: 0, cost: 0, rate: 0, income: 0, self: 0, weather: 0 },
+  pessimistic: { sentiment: -3, cost: +0.02, rate: +0.001, income: -0.01, self: 0, weather: 0 },
 };
 
 /** ドライバー ID から種別を判定する。 */
 export function driverClass(driverId: string): DriverClass {
   if (driverId.startsWith("household.")) return "self"; // 前値（AR項）
+  if (driverId.startsWith("weather.")) return "weather"; // 外生の天候
   if (driverId.startsWith("cao.")) return "sentiment";
   if (driverId === "boj.policy_rate") return "rate";
   if (driverId.startsWith("wage.")) return "income";
