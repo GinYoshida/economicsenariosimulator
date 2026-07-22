@@ -65,6 +65,7 @@ const SPAN_BY_CLASS: Record<
   rate: { span: 0.5, step: 0.05, unit: "%" },
   income: { span: 0.05, step: 0.005, unit: "" },
   self: { span: 0.05, step: 0.005, unit: "" }, // 前値（AR項）: UIには出さない
+  weather: { span: 0.1, step: 0.01, unit: "" }, // 天候（割合0-1）: 外生シナリオ
 };
 
 /** 目的変数の前値（AR項）＝シナリオUIから除外する内部ドライバー。 */
