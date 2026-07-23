@@ -21,7 +21,7 @@ import pandas as pd
 
 from etl.panel import build_panel
 from etl.store import list_series, read_series
-from models.features import make_features
+from models.features import TARGET_BY_CATEGORY, make_features
 from models.nowcast import nowcast_target
 from models.ols import FitResult, fit_ols, predict
 from etl.registry import REGISTRY
@@ -40,6 +40,10 @@ from models.schema import (
     DriverForecastFile,
     RollingForecastFile,
     RollingPoint,
+    MinlagCategory,
+    MinlagDriver,
+    MinlagFitPoint,
+    MinlagModelFile,
     SeriesData,
     SeriesFile,
     SeriesPoint,
@@ -177,6 +181,74 @@ def _forecast_row(panel: pd.DataFrame, fit: FitResult, lags: dict[str, int],
             row[name] = 1.0 if name == f"month_{month}" else 0.0
     frame = pd.DataFrame([row]).reindex(columns=fit.feature_names, fill_value=0.0)
     return frame
+
+
+# ラグ最小モデル（ユーザーの読み→消費の翻訳器）。外生は同月(lag0)、AR項のみ lag1。
+def _minlag_lags(category: str, panel: pd.DataFrame) -> dict[str, int]:
+    target = TARGET_BY_CATEGORY[category]
+    return {
+        col: (1 if col == target else 0)
+        for col in CATEGORY_DRIVERS[category]
+        if col in panel.columns
+    }
+
+
+def _build_minlag(
+    panel: pd.DataFrame, categories: list[str], data_vintage: str
+) -> MinlagModelFile:
+    """ラグ最小の翻訳器モデルを学習し、係数＋当てはめ散布を返す。"""
+    cats: list[MinlagCategory] = []
+    fit_points: list[MinlagFitPoint] = []
+    for cat in categories:
+        target = TARGET_BY_CATEGORY[cat]
+        lags = _minlag_lags(cat, panel)
+        X, y = make_features(panel, cat, lags=lags)
+        fit = fit_ols(X, y)
+
+        # 季節性（drop_first=True で month_1 は切片に吸収）を月別切片へ畳み込む。
+        intercept_by_month = [
+            fit.intercept + (fit.coefs.get(f"month_{m}", 0.0) if m != 1 else 0.0)
+            for m in range(1, 13)
+        ]
+        ar_coef = float(fit.coefs.get(f"{target}__lag1", 0.0))
+        drivers = [
+            MinlagDriver(
+                driver=col,
+                label_ja=DRIVER_LABELS.get(col, col),
+                unit=REGISTRY[col].unit if col in REGISTRY else "",
+                coef=float(fit.coefs[f"{col}__lag0"]),
+            )
+            for col, lag in lags.items()
+            if col != target
+        ]
+        sigma = _residual_sigma(fit, X, y)
+        fitted = predict(fit, X)
+        for date, pred, act in zip(X.index, fitted, y.to_numpy(dtype=float)):
+            fit_points.append(
+                MinlagFitPoint(
+                    category=cat,
+                    date=date.date().isoformat(),
+                    actual=float(act),
+                    predicted=float(pred),
+                )
+            )
+        cats.append(
+            MinlagCategory(
+                category=cat,
+                intercept_by_month=[float(v) for v in intercept_by_month],
+                ar_coef=ar_coef,
+                ar_driver=target,
+                drivers=drivers,
+                r2=float(fit.r2),
+                resid_std=float(sigma),
+            )
+        )
+    return MinlagModelFile(
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        data_vintage=data_vintage,
+        categories=cats,
+        fit=fit_points,
+    )
 
 
 def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
@@ -364,6 +436,9 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
         blend=[BlendParam(**b) for b in rolling_blend],
     )
 
+    # --- minlag_model.json（ユーザーの読み→消費の翻訳器・散布用当てはめ） ---
+    minlag_file = _build_minlag(panel, categories, data_vintage)
+
     paths = {
         "coefficients": out_dir / "coefficients.json",
         "baseline": out_dir / "baseline.json",
@@ -371,6 +446,7 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
         "series": out_dir / "series.json",
         "driver_forecasts": out_dir / "driver_forecasts.json",
         "rolling_forecast": out_dir / "rolling_forecast.json",
+        "minlag_model": out_dir / "minlag_model.json",
         "sources": out_dir / "sources.json",
     }
     paths["coefficients"].write_text(
@@ -384,6 +460,9 @@ def build_artifacts(con: duckdb.DuckDBPyConnection, out_dir) -> dict[str, Path]:
     )
     paths["rolling_forecast"].write_text(
         rolling_file.model_dump_json(indent=2), encoding="utf-8"
+    )
+    paths["minlag_model"].write_text(
+        minlag_file.model_dump_json(indent=2), encoding="utf-8"
     )
     paths["sources"].write_text(
         json.dumps(sources, ensure_ascii=False, indent=2), encoding="utf-8"

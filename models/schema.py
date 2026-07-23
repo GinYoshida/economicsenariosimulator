@@ -158,3 +158,47 @@ class RollingForecastFile(BaseModel):
     points: list[RollingPoint]
     blend: list[BlendParam] = []
 
+
+class MinlagDriver(BaseModel):
+    """ラグ最小モデルの外生ドライバー（同月・lag0）の係数。"""
+
+    driver: str
+    label_ja: str
+    unit: str
+    coef: float
+
+
+class MinlagCategory(BaseModel):
+    """ラグ最小モデル（ユーザーの読み→消費の翻訳器）。
+
+    y_t = intercept_by_month[month(t)] + Σ coef_j·x_j,t + ar_coef·y_{t-1}
+    外生ドライバー x は同月(lag0)、自己回帰 y_{t-1} のみ lag1。季節性は
+    月別インテルセプトに畳み込む（フロントは月で引くだけ）。
+    """
+
+    category: str
+    intercept_by_month: list[float]  # 長さ12（index0=1月）。季節込みの切片。
+    ar_coef: float                   # φ（前値 lag1 の係数）
+    ar_driver: str                   # 例 "household.food.real_yoy"
+    drivers: list[MinlagDriver]      # 外生（lag0）
+    r2: float
+    resid_std: float
+
+
+class MinlagFitPoint(BaseModel):
+    """ラグ最小モデルの当てはめ（実績×予測）1点。散布図用。"""
+
+    category: str
+    date: str
+    actual: float
+    predicted: float
+
+
+class MinlagModelFile(BaseModel):
+    """minlag_model.json のルート。翻訳器の係数＋当てはめ散布。"""
+
+    generated_at: str
+    data_vintage: str
+    categories: list[MinlagCategory]
+    fit: list[MinlagFitPoint]
+

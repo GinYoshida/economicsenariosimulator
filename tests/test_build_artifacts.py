@@ -105,6 +105,30 @@ def test_build_artifacts_writes_valid_schema_files(tmp_path):
         assert any(p.mean is not None and (p.std or 0) > 0.0 for p in d.points)
 
 
+def test_minlag_model_json_valid(tmp_path):
+    con = duckdb.connect(":memory:")
+    init_db(con)
+    _populate(con)
+    build_artifacts(con, tmp_path)
+
+    from models.schema import MinlagModelFile
+
+    path = tmp_path / "minlag_model.json"
+    assert path.exists()
+    mm = MinlagModelFile(**json.loads(path.read_text(encoding="utf-8")))
+    cats = {c.category: c for c in mm.categories}
+    assert {"food", "clothing"} <= set(cats)
+    food = cats["food"]
+    # 季節性は12か月ぶんの月別切片に畳み込む。
+    assert len(food.intercept_by_month) == 12
+    # AR 項は目的変数自身、外生ドライバーは lag0（AR は drivers に含めない）。
+    assert food.ar_driver == "household.food.real_yoy"
+    assert all(d.driver != food.ar_driver for d in food.drivers)
+    # 散布用の当てはめ点が両カテゴリに存在。
+    assert any(p.category == "food" for p in mm.fit)
+    assert any(p.category == "clothing" for p in mm.fit)
+
+
 def test_sources_json_lists_provenance(tmp_path):
     con = duckdb.connect(":memory:")
     init_db(con)
