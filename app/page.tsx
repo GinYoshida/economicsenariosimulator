@@ -8,14 +8,14 @@ import {
   loadBaseline,
   loadCoefficients,
   loadDriverForecasts,
-  loadRollingForecasts,
+  loadMinlagModel,
   loadSeries,
   loadSources,
   type Backtest,
   type Baseline,
   type Coefficients,
   type DriverForecastFile,
-  type RollingForecastFile,
+  type MinlagModelFile,
   type SeriesFile,
   type SourceMeta,
 } from "@/app/lib/artifacts";
@@ -27,7 +27,7 @@ type Artifacts = {
   sources: SourceMeta[];
   series: SeriesFile | null;
   driverForecasts: DriverForecastFile | null;
-  rolling: RollingForecastFile | null;
+  minlag: MinlagModelFile | null;
 };
 
 export default function Home() {
@@ -42,10 +42,10 @@ export default function Home() {
       loadSources(),
       loadSeries(),
       loadDriverForecasts(),
-      loadRollingForecasts(),
+      loadMinlagModel(),
     ])
       .then(
-        ([coefficients, baseline, backtest, sources, series, driverForecasts, rolling]) =>
+        ([coefficients, baseline, backtest, sources, series, driverForecasts, minlag]) =>
           setData({
             coefficients,
             baseline,
@@ -53,7 +53,7 @@ export default function Home() {
             sources,
             series,
             driverForecasts,
-            rolling,
+            minlag,
           }),
       )
       .catch((e: unknown) => setError(String(e)));
@@ -87,7 +87,7 @@ export default function Home() {
       sources={data.sources}
       series={data.series}
       driverForecasts={data.driverForecasts}
-      rolling={data.rolling}
+      minlag={data.minlag}
     />
   );
 }

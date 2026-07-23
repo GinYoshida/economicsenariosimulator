@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 import Dashboard from "@/app/components/Dashboard";
 import type {
@@ -7,6 +7,7 @@ import type {
   Baseline,
   Coefficients,
   DriverForecastFile,
+  MinlagModelFile,
   SeriesFile,
   SourceMeta,
 } from "@/app/lib/artifacts";
@@ -42,6 +43,40 @@ const driverForecasts: DriverForecastFile = {
   ],
 };
 
+// ラグ最小の翻訳器モデル（合成フィクスチャ）。
+const minlag: MinlagModelFile = {
+  generated_at: "2026-06-22T00:00:00Z",
+  data_vintage: "2024-01-01",
+  categories: [
+    {
+      category: "food",
+      intercept_by_month: Array.from({ length: 12 }, () => 0),
+      ar_coef: 0.3,
+      ar_driver: "household.food.real_yoy",
+      drivers: [
+        { driver: "cpi.food", label_ja: "食料価格(CPI)", unit: "index", coef: 2 },
+      ],
+      r2: 0.5,
+      resid_std: 0.02,
+    },
+    {
+      category: "clothing",
+      intercept_by_month: Array.from({ length: 12 }, () => 0),
+      ar_coef: 0.2,
+      ar_driver: "household.clothing.real_yoy",
+      drivers: [
+        { driver: "cpi.clothing", label_ja: "被服価格(CPI)", unit: "index", coef: 1 },
+      ],
+      r2: 0.4,
+      resid_std: 0.03,
+    },
+  ],
+  fit: [
+    { category: "food", date: "2024-01-01", actual: 0.02, predicted: 0.018 },
+    { category: "clothing", date: "2024-01-01", actual: 0.01, predicted: 0.012 },
+  ],
+};
+
 const seriesFile: SeriesFile = {
   generated_at: "2026-06-22T00:00:00Z",
   series: [
@@ -59,10 +94,12 @@ const seriesFile: SeriesFile = {
   ],
 };
 
-function renderDashboard(
-  dff: DriverForecastFile | null = null,
-  series: SeriesFile | null = null,
-) {
+function renderDashboard(opts: {
+  dff?: DriverForecastFile | null;
+  series?: SeriesFile | null;
+  mm?: MinlagModelFile | null;
+} = {}) {
+  const { dff = driverForecasts, series = null, mm = minlag } = opts;
   return render(
     <Dashboard
       coefficients={coefficients as Coefficients}
@@ -71,99 +108,91 @@ function renderDashboard(
       sources={sources as SourceMeta[]}
       series={series}
       driverForecasts={dff}
+      minlag={mm}
     />,
   );
 }
 
 describe("Dashboard tabs", () => {
-  it("shows the scenario tab (with fit scatter at the bottom) by default", () => {
+  it("shows the simulator scenario tab by default", () => {
     renderDashboard();
     expect(screen.getByTestId("tab-scenario")).toBeInTheDocument();
-    expect(screen.getByTestId("forecast-chart")).toBeInTheDocument();
-    expect(screen.getByTestId("driver-sliders")).toBeInTheDocument();
-    expect(screen.getByTestId("decomposition-chart")).toBeInTheDocument();
-    expect(screen.getByTestId("fit-scatter")).toBeInTheDocument(); // moved here
-    // model/data panels are not mounted until their tab is selected
+    expect(screen.getByTestId("forecast-chart-food")).toBeInTheDocument();
+    expect(screen.getByTestId("forecast-chart-clothing")).toBeInTheDocument();
+    expect(screen.getByTestId("driver-reads")).toBeInTheDocument();
+    expect(screen.getByTestId("fit-scatter")).toBeInTheDocument();
     expect(screen.queryByTestId("model-explanation")).toBeNull();
     expect(screen.queryByTestId("source-tables")).toBeNull();
   });
 
-  it("switches to the model tab and shows explanation + backtest (no scatter)", () => {
+  it("switches to the model tab (explanation + backtest)", () => {
     renderDashboard();
     fireEvent.click(screen.getByRole("tab", { name: "モデル解説" }));
     expect(screen.getByTestId("model-explanation")).toBeInTheDocument();
     expect(screen.getByTestId("backtest-panel")).toBeInTheDocument();
-    expect(screen.queryByTestId("fit-scatter")).toBeNull(); // now on the scenario tab
   });
 
-  it("switches to the data tab and shows source tables + citations", () => {
-    renderDashboard(null, seriesFile);
+  it("switches to the data tab (source tables + citations)", () => {
+    renderDashboard({ series: seriesFile });
     fireEvent.click(screen.getByRole("tab", { name: "データソース" }));
     expect(screen.getByTestId("source-tables")).toBeInTheDocument();
     expect(screen.getByTestId("series-cpi.food")).toBeInTheDocument();
     expect(screen.getByTestId("source-panel")).toBeInTheDocument();
   });
+
+  it("shows a fallback when the min-lag model is missing", () => {
+    renderDashboard({ mm: null });
+    expect(screen.getByTestId("tab-scenario")).toHaveTextContent("未生成");
+    expect(screen.queryByTestId("forecast-chart-food")).toBeNull();
+  });
 });
 
-describe("Dashboard scenario interactions", () => {
-  it("updates the forecast when a driver slider moves", () => {
+describe("Simulator interactions", () => {
+  it("updates the consumption forecast when a driver landing changes", () => {
     renderDashboard();
     const before = screen.getByTestId("food-next").textContent;
-    const sliders = within(screen.getByTestId("driver-sliders")).getAllByRole(
-      "slider",
-    );
-    fireEvent.change(sliders[0], { target: { value: "9" } });
+    const input = screen.getByLabelText("食料価格(CPI)の着地値");
+    fireEvent.change(input, { target: { value: "0.2" } });
     expect(screen.getByTestId("food-next").textContent).not.toEqual(before);
   });
 
-  it("switching presets changes driver values", () => {
-    renderDashboard();
-    const base = screen.getByTestId("food-next").textContent;
-    fireEvent.click(screen.getByRole("button", { name: "悲観" }));
-    expect(screen.getByTestId("food-next").textContent).not.toEqual(base);
-  });
-
-  it("toggling 3-month average adds MA fields to the chart data", () => {
-    renderDashboard();
-    expect(screen.getByTestId("forecast-chart-food-data").textContent).not.toMatch(/MA/);
-    fireEvent.click(screen.getByLabelText("3カ月平均を表示"));
-    expect(screen.getByTestId("forecast-chart-food-data").textContent).toMatch(/MA/);
-  });
-
-  it("splits food and clothing into separate charts", () => {
-    renderDashboard();
-    expect(screen.getByTestId("forecast-chart-food")).toBeInTheDocument();
-    expect(screen.getByTestId("forecast-chart-clothing")).toBeInTheDocument();
-  });
-
   it("changes the forecast horizon", () => {
-    renderDashboard(driverForecasts);
-    const sel = screen.getByLabelText("予測期間（か月先）");
-    fireEvent.change(sel, { target: { value: "1" } });
-    expect((sel as HTMLSelectElement).value).toBe("1");
-  });
-
-  it("decomposition switches with the active category", () => {
     renderDashboard();
-    const food = screen.getByTestId("decomposition-data").textContent;
-    fireEvent.click(screen.getByRole("button", { name: "衣料" }));
-    expect(screen.getByTestId("decomposition-data").textContent).not.toEqual(food);
+    const sel = screen.getByLabelText("予測期間（か月先）");
+    fireEvent.change(sel, { target: { value: "3" } });
+    expect((sel as HTMLSelectElement).value).toBe("3");
   });
 
-  it("shows the driver forecast in a separate chart and switches driver", () => {
-    renderDashboard(driverForecasts);
-    expect(screen.getByTestId("driver-section")).toBeInTheDocument();
-    const chart = screen.getByTestId("driver-chart");
-    const first = within(chart).getByTestId("driver-chart-data").textContent;
-    fireEvent.change(screen.getByLabelText("ドライバー選択"), {
-      target: { value: "cpi.clothing" },
-    });
-    const second = screen.getByTestId("driver-chart-data").textContent;
-    expect(second).not.toEqual(first);
+  it("saves up to three scenarios and disables further saving", () => {
+    renderDashboard();
+    const save = screen.getByRole("button", { name: "この想定を保存" });
+    fireEvent.click(save);
+    expect(screen.getByTestId("scenario-compare")).toBeInTheDocument();
+    fireEvent.click(save);
+    fireEvent.click(save);
+    expect((save as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("has no driver section when driver forecasts are absent", () => {
-    renderDashboard(null);
-    expect(screen.queryByTestId("driver-section")).toBeNull();
+  it("removes a saved scenario", () => {
+    renderDashboard();
+    const save = screen.getByRole("button", { name: "この想定を保存" });
+    fireEvent.click(save);
+    fireEvent.click(screen.getByRole("button", { name: "想定1を削除" }));
+    expect(screen.queryByTestId("scenario-compare")).toBeNull();
+  });
+
+  it("shows the selected driver's state-space forecast chart", () => {
+    renderDashboard();
+    expect(screen.getByTestId("driver-forecast")).toBeInTheDocument();
+    expect(screen.getByTestId("driver-chart")).toBeInTheDocument();
+  });
+
+  it("resets landings to the model forecast", () => {
+    renderDashboard();
+    const input = screen.getByLabelText("食料価格(CPI)の着地値") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "0.25" } });
+    fireEvent.click(screen.getByRole("button", { name: "モデル予測に戻す" }));
+    // reset -> back to the model landing (0.031), not the edited 0.25
+    expect(Number(input.value)).toBeCloseTo(0.031, 3);
   });
 });

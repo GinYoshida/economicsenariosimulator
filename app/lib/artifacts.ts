@@ -186,6 +186,44 @@ export async function loadRollingForecasts(): Promise<RollingForecastFile | null
   }
 }
 
+// --- ラグ最小モデル（ユーザーの読み→消費の翻訳器） ---
+export type MinlagDriver = {
+  driver: string;
+  label_ja: string;
+  unit: string;
+  coef: number;
+};
+export type MinlagCategory = {
+  category: string;
+  intercept_by_month: number[]; // 長さ12（index0=1月）
+  ar_coef: number;
+  ar_driver: string;
+  drivers: MinlagDriver[];
+  r2: number;
+  resid_std: number;
+};
+export type MinlagFitPoint = {
+  category: string;
+  date: string;
+  actual: number;
+  predicted: number;
+};
+export type MinlagModelFile = {
+  generated_at: string;
+  data_vintage: string;
+  categories: MinlagCategory[];
+  fit: MinlagFitPoint[];
+};
+
+/** minlag_model.json（翻訳器の係数＋当てはめ散布）をロード。未生成なら null。 */
+export async function loadMinlagModel(): Promise<MinlagModelFile | null> {
+  try {
+    return await loadJson<MinlagModelFile>("minlag_model.json");
+  } catch {
+    return null;
+  }
+}
+
 /** DriverForecastFile を {driver: {date: {mean,std}}} の参照マップに変換。
  * 過去月は actual を平均・std=0、将来月は mean/std を使う（ファン伝播用）。 */
 export function driverLookup(file: DriverForecastFile | null): DriverForecastLookup {
