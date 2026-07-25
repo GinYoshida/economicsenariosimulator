@@ -181,10 +181,11 @@ describe("Simulator interactions", () => {
     expect(screen.queryByTestId("scenario-compare")).toBeNull();
   });
 
-  it("shows the selected driver's state-space forecast chart", () => {
+  it("shows a state-space forecast chart for every driver", () => {
     renderDashboard();
     expect(screen.getByTestId("driver-forecast")).toBeInTheDocument();
-    expect(screen.getByTestId("driver-chart")).toBeInTheDocument();
+    // cpi.food と cpi.clothing の2ドライバー分のチャートが並ぶ。
+    expect(screen.getAllByTestId("driver-chart")).toHaveLength(2);
   });
 
   it("resets landings to the model forecast", () => {

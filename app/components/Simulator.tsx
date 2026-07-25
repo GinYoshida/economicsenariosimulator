@@ -121,7 +121,6 @@ export default function Simulator({
 
   const [horizon, setHorizon] = useState(Math.min(6, maxHorizon));
   const [landings, setLandings] = useState<Record<string, number>>({});
-  const [selDriver, setSelDriver] = useState(drivers[0]?.driver ?? "");
   const [saved, setSaved] = useState<SavedScenario[]>([]);
   const [seq, setSeq] = useState(1);
   const [windowKey, setWindowKey] = useState("3y");
@@ -205,7 +204,10 @@ export default function Simulator({
     setLandings({});
   }
 
-  const selForecast = driverForecastMap[selDriver] ?? null;
+  // 予測データを持つ外生ドライバー（全表示用）。
+  const driverCharts = drivers
+    .map((d) => driverForecastMap[d.driver])
+    .filter((d): d is NonNullable<typeof d> => d != null);
   const fitPoints = minlag.fit.length ? minlag.fit : backtestFallback ?? [];
 
   return (
@@ -345,15 +347,7 @@ export default function Simulator({
             return (
               <div key={d.driver} className="rounded border border-gray-100 p-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <button
-                    type="button"
-                    onClick={() => setSelDriver(d.driver)}
-                    className={`text-left font-medium ${
-                      selDriver === d.driver ? "text-blue-700" : "text-gray-700"
-                    }`}
-                  >
-                    {d.label}
-                  </button>
+                  <span className="font-medium text-gray-700">{d.label}</span>
                   <span className="ml-auto text-xs text-gray-400">
                     現在 {fmtVal(cur, d.unit)} → モデル {fmtVal(modelL, d.unit)}
                   </span>
@@ -390,16 +384,18 @@ export default function Simulator({
         </div>
       </div>
 
-      {/* 選択ドライバーの状態空間予測（出発点） */}
-      {selForecast && (
+      {/* 全ドライバーの状態空間予測（出発点） */}
+      {driverCharts.length > 0 && (
         <div data-testid="driver-forecast">
-          <h2 className="mb-2 text-base font-semibold">
-            {selForecast.label_ja}の予測（出発点・帯付き）
-          </h2>
-          <DriverChart driver={selForecast} z={z} fromDate={cutoff} />
-          <p className="mt-1 text-[10px] text-gray-400">
-            状態空間モデルの予測と信頼帯。これを目安に上の着地値を調整してください。
+          <h2 className="mb-1 text-base font-semibold">説明変数の予測（出発点・帯付き）</h2>
+          <p className="mb-2 text-[10px] text-gray-400">
+            各説明変数の状態空間モデル予測と信頼帯。これを目安に上の着地値を調整してください。
           </p>
+          <div className="flex flex-col gap-6">
+            {driverCharts.map((d) => (
+              <DriverChart key={d.driver} driver={d} z={z} fromDate={cutoff} />
+            ))}
+          </div>
         </div>
       )}
 
