@@ -14,7 +14,7 @@ import {
 } from "recharts";
 
 import CategoryChart, { type CategoryRow } from "@/app/components/CategoryChart";
-import DriverChart from "@/app/components/DriverChart";
+import DriverReadBlock from "@/app/components/DriverReadBlock";
 import FitScatter from "@/app/components/FitScatter";
 import type {
   Baseline,
@@ -43,14 +43,6 @@ const MAX_SAVED = 3;
 
 function pct(v: number | null | undefined): string {
   return v == null ? "—" : `${(v * 100).toFixed(1)}%`;
-}
-
-// ドライバー値の表示整形（単位で桁を変える）。
-function fmtVal(v: number, unit: string): string {
-  if (unit === "ratio") return v.toFixed(3);
-  if (unit === "yen") return Math.round(v).toLocaleString();
-  if (Math.abs(v) >= 100) return v.toFixed(1);
-  return v.toFixed(2);
 }
 
 type SavedScenario = {
@@ -204,10 +196,6 @@ export default function Simulator({
     setLandings({});
   }
 
-  // 予測データを持つ外生ドライバー（全表示用）。
-  const driverCharts = drivers
-    .map((d) => driverForecastMap[d.driver])
-    .filter((d): d is NonNullable<typeof d> => d != null);
   const fitPoints = minlag.fit.length ? minlag.fit : backtestFallback ?? [];
 
   return (
@@ -326,78 +314,32 @@ export default function Simulator({
         <ScenarioCompare saved={saved} current={sim} lastDate={lastDate} />
       )}
 
-      {/* 説明変数の読み（着地値）設定 */}
-      <div>
-        <h2 className="mb-2 text-base font-semibold">説明変数の読み（着地値）</h2>
-        <div className="flex flex-col gap-2" data-testid="driver-reads">
-          {drivers.map((d) => {
-            const cur = currentOf[d.driver] ?? 0;
-            const modelL = modelLandingOf[d.driver] ?? cur;
-            const val = landingOf(d.driver);
-            const delta = Math.max(
-              Math.abs(modelL - cur),
-              Math.abs(cur) * 0.2,
-              Math.abs(modelL) * 0.2,
-              d.unit === "ratio" ? 0.1 : 1e-6,
-            );
-            const lo = Math.min(cur, modelL) - 2 * delta;
-            const hi = Math.max(cur, modelL) + 2 * delta;
-            const step = (hi - lo) / 100 || 0.01;
-            const edited = landings[d.driver] != null;
-            return (
-              <div key={d.driver} className="rounded border border-gray-100 p-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium text-gray-700">{d.label}</span>
-                  <span className="ml-auto text-xs text-gray-400">
-                    現在 {fmtVal(cur, d.unit)} → モデル {fmtVal(modelL, d.unit)}
-                  </span>
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  <input
-                    type="range"
-                    aria-label={`${d.label}の着地値スライダー`}
-                    min={lo}
-                    max={hi}
-                    step={step}
-                    value={val}
-                    onChange={(e) =>
-                      setLandings((p) => ({ ...p, [d.driver]: Number(e.target.value) }))
-                    }
-                    className="flex-1"
-                  />
-                  <input
-                    type="number"
-                    aria-label={`${d.label}の着地値`}
-                    value={Number.isFinite(val) ? Number(val.toFixed(4)) : 0}
-                    step={step}
-                    onChange={(e) =>
-                      setLandings((p) => ({ ...p, [d.driver]: Number(e.target.value) }))
-                    }
-                    className={`w-24 rounded border px-1 py-0.5 text-right text-xs ${
-                      edited ? "border-blue-400 bg-blue-50" : "border-gray-300"
-                    }`}
-                  />
-                </div>
-              </div>
-            );
-          })}
+      {/* 説明変数ごとに「予測グラフ＋着地値スライダー」を一体で縦に並べる。
+          グラフの予測中心＝あなたの読みで、信頼帯ごとスライダーに連動して動く。 */}
+      <div data-testid="driver-reads">
+        <h2 className="mb-1 text-base font-semibold">説明変数の読み（着地値）と予測</h2>
+        <p className="mb-2 text-[10px] text-gray-400">
+          各グラフの点線＝あなたの読み（現在→着地の想定）。スライダーを動かすと予測中心と信頼帯が一緒に動きます。
+        </p>
+        <div className="flex flex-col gap-3">
+          {drivers.map((d) => (
+            <DriverReadBlock
+              key={d.driver}
+              driver={driverForecastMap[d.driver] ?? null}
+              label={d.label}
+              unit={d.unit}
+              current={currentOf[d.driver] ?? 0}
+              modelLanding={modelLandingOf[d.driver] ?? currentOf[d.driver] ?? 0}
+              landing={landingOf(d.driver)}
+              edited={landings[d.driver] != null}
+              horizon={horizon}
+              z={z}
+              cutoff={cutoff}
+              onChange={(v) => setLandings((p) => ({ ...p, [d.driver]: v }))}
+            />
+          ))}
         </div>
       </div>
-
-      {/* 全ドライバーの状態空間予測（出発点） */}
-      {driverCharts.length > 0 && (
-        <div data-testid="driver-forecast">
-          <h2 className="mb-1 text-base font-semibold">説明変数の予測（出発点・帯付き）</h2>
-          <p className="mb-2 text-[10px] text-gray-400">
-            各説明変数の状態空間モデル予測と信頼帯。これを目安に上の着地値を調整してください。
-          </p>
-          <div className="flex flex-col gap-6">
-            {driverCharts.map((d) => (
-              <DriverChart key={d.driver} driver={d} z={z} fromDate={cutoff} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ラグ最小翻訳器の当てはめ散布 */}
       <div>
