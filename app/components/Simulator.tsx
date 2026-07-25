@@ -21,7 +21,18 @@ import type {
   DriverForecastFile,
   MinlagModelFile,
 } from "@/app/lib/artifacts";
+import { addMonths } from "@/app/lib/fanForecast";
 import { buildLinearPath, simulateConsumption } from "@/app/lib/minlagSim";
+
+// 横軸（表示期間）の選択肢。既定は直近3年＋予測。
+const WINDOW_OPTIONS: { key: string; label: string; months: number }[] = [
+  { key: "all", label: "全期間", months: Infinity },
+  { key: "10y", label: "10年", months: 120 },
+  { key: "5y", label: "5年", months: 60 },
+  { key: "3y", label: "3年", months: 36 },
+  { key: "2y", label: "2年", months: 24 },
+  { key: "1y", label: "1年", months: 12 },
+];
 
 const CAT_COLOR: Record<string, string> = { food: "#e07a3f", clothing: "#3f6fe0" };
 const CAT_CENTER: Record<string, string> = { food: "#7c2d12", clothing: "#6d28d9" };
@@ -113,6 +124,11 @@ export default function Simulator({
   const [selDriver, setSelDriver] = useState(drivers[0]?.driver ?? "");
   const [saved, setSaved] = useState<SavedScenario[]>([]);
   const [seq, setSeq] = useState(1);
+  const [windowKey, setWindowKey] = useState("3y");
+
+  const windowMonths =
+    WINDOW_OPTIONS.find((w) => w.key === windowKey)?.months ?? Infinity;
+  const cutoff = windowMonths === Infinity ? "" : addMonths(lastDate, -windowMonths);
 
   // 実効着地値（ユーザー設定が無ければモデル予測の着地値）。
   const landingOf = (id: string) =>
@@ -160,7 +176,8 @@ export default function Simulator({
       out.push({ date: h.date, kind: "history", actual: actualOf(h), center: null, sd: null });
     for (const p of sim[cat] ?? [])
       out.push({ date: p.date, kind: "forecast", actual: null, center: p.mean, sd: p.sd });
-    return out;
+    // 横軸フィルタ（予測は常に残す）。
+    return out.filter((r) => r.kind === "forecast" || !cutoff || r.date >= cutoff);
   }
   const foodRows = rowsFor("food", (h) => h.food_yoy);
   const clothingRows = rowsFor("clothing", (h) => h.clothing_yoy);
@@ -198,26 +215,43 @@ export default function Simulator({
         まず各変数の状態空間予測（帯付き）を出発点に、上下に調整してください。予測は<b>ラグ最小</b>で翻訳します。
       </p>
 
-      {/* 予測ホライズン */}
-      <label className="flex items-center gap-2 text-xs text-gray-600">
-        予測期間
-        <select
-          aria-label="予測期間（か月先）"
-          value={horizon}
-          onChange={(e) => setHorizon(Number(e.target.value))}
-          className="rounded border border-gray-300 px-1 py-0.5"
-        >
-          {Array.from({ length: maxHorizon }, (_, i) => i + 1).map((h) => (
-            <option key={h} value={h}>
-              {h}カ月先
-            </option>
-          ))}
-        </select>
+      {/* 表示期間（横軸）＋予測ホライズン */}
+      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+        <label className="flex items-center gap-1">
+          表示期間
+          <select
+            aria-label="表示期間"
+            value={windowKey}
+            onChange={(e) => setWindowKey(e.target.value)}
+            className="rounded border border-gray-300 px-1 py-0.5"
+          >
+            {WINDOW_OPTIONS.map((w) => (
+              <option key={w.key} value={w.key}>
+                {w.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-1">
+          予測期間
+          <select
+            aria-label="予測期間（か月先）"
+            value={horizon}
+            onChange={(e) => setHorizon(Number(e.target.value))}
+            className="rounded border border-gray-300 px-1 py-0.5"
+          >
+            {Array.from({ length: maxHorizon }, (_, i) => i + 1).map((h) => (
+              <option key={h} value={h}>
+                {h}カ月先
+              </option>
+            ))}
+          </select>
+        </label>
         <span className="ml-auto flex gap-3" data-testid="sim-next">
           <span data-testid="food-next">食料: {pct(sim.food?.[0]?.mean)}</span>
           <span data-testid="clothing-next">衣料: {pct(sim.clothing?.[0]?.mean)}</span>
         </span>
-      </label>
+      </div>
 
       {/* 消費予測（出力） */}
       <div data-testid="forecast-chart" className="flex flex-col gap-4">
@@ -362,7 +396,7 @@ export default function Simulator({
           <h2 className="mb-2 text-base font-semibold">
             {selForecast.label_ja}の予測（出発点・帯付き）
           </h2>
-          <DriverChart driver={selForecast} z={z} />
+          <DriverChart driver={selForecast} z={z} fromDate={cutoff} />
           <p className="mt-1 text-[10px] text-gray-400">
             状態空間モデルの予測と信頼帯。これを目安に上の着地値を調整してください。
           </p>

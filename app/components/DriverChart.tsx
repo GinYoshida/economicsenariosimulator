@@ -26,22 +26,26 @@ const COLOR = {
 export default function DriverChart({
   driver,
   z = 1.2816,
+  fromDate = "",
 }: {
   driver: DriverForecast;
   z?: number;
+  fromDate?: string; // この日付より前の履歴を隠す（予測は常に表示）
 }) {
-  const rows = driver.points.map((p) => {
-    const hasFc = p.mean != null;
-    const std = p.std ?? 0;
-    return {
-      date: p.date,
-      actual: p.actual ?? null,
-      backcast: p.backcast ?? null,
-      forecast: hasFc ? p.mean : null,
-      band: hasFc ? [p.mean! - z * std, p.mean! + z * std] : null,
-      kind: hasFc ? "forecast" : "history",
-    };
-  });
+  const rows = driver.points
+    .map((p) => {
+      const hasFc = p.mean != null;
+      const std = p.std ?? 0;
+      return {
+        date: p.date,
+        actual: p.actual ?? null,
+        backcast: p.backcast ?? null,
+        forecast: hasFc ? p.mean : null,
+        band: hasFc ? [p.mean! - z * std, p.mean! + z * std] : null,
+        kind: hasFc ? "forecast" : "history",
+      };
+    })
+    .filter((r) => r.kind === "forecast" || !fromDate || r.date >= fromDate);
   const lastHistory = [...rows].reverse().find((r) => r.kind === "history");
 
   // 凡例クリックで系列の表示/非表示を切り替える。
@@ -71,7 +75,16 @@ export default function DriverChart({
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
             <YAxis tick={{ fontSize: 10 }} />
-            <Tooltip formatter={(v) => (v == null ? "—" : Number(v).toFixed(3))} />
+            <Tooltip
+              formatter={(v, name) => {
+                if (Array.isArray(v))
+                  return [
+                    `${Number(v[0]).toFixed(3)} 〜 ${Number(v[1]).toFixed(3)}`,
+                    name,
+                  ];
+                return [v == null ? "—" : Number(v).toFixed(3), name];
+              }}
+            />
             <Legend
               wrapperStyle={{ fontSize: 10 }}
               onClick={(o) => toggle((o as { dataKey?: string | number })?.dataKey)}
