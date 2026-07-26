@@ -16,6 +16,7 @@ import {
 import CategoryChart, { type CategoryRow } from "@/app/components/CategoryChart";
 import DriverReadBlock from "@/app/components/DriverReadBlock";
 import FitScatter from "@/app/components/FitScatter";
+import SensitivityTable, { type SensRow } from "@/app/components/SensitivityTable";
 import type {
   Baseline,
   DriverForecastFile,
@@ -116,6 +117,7 @@ export default function Simulator({
   const [saved, setSaved] = useState<SavedScenario[]>([]);
   const [seq, setSeq] = useState(1);
   const [windowKey, setWindowKey] = useState("3y");
+  const [analysisCat, setAnalysisCat] = useState<"food" | "clothing">("food");
 
   const windowMonths =
     WINDOW_OPTIONS.find((w) => w.key === windowKey)?.months ?? Infinity;
@@ -197,6 +199,26 @@ export default function Simulator({
   }
 
   const fitPoints = minlag.fit.length ? minlag.fit : backtestFallback ?? [];
+
+  // ドライバーの標準偏差（実績履歴から）。感度＝係数×σ。
+  const sigmaOf = (id: string): number => {
+    const vals = (driverForecastMap[id]?.points ?? [])
+      .filter((p) => p.actual != null)
+      .map((p) => p.actual as number);
+    if (vals.length < 2) return 0;
+    const m = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return Math.sqrt(vals.reduce((a, b) => a + (b - m) ** 2, 0) / vals.length);
+  };
+  const sensRows: SensRow[] = (catModel[analysisCat]?.drivers ?? []).map((d) => {
+    const sigma = sigmaOf(d.driver);
+    const cur = currentOf[d.driver] ?? 0;
+    return {
+      driver: d.driver,
+      label: d.label_ja,
+      sens: d.coef * sigma,
+      contrib: d.coef * (landingOf(d.driver) - cur),
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6" data-testid="tab-scenario">
@@ -341,13 +363,36 @@ export default function Simulator({
         </div>
       </div>
 
-      {/* ラグ最小翻訳器の当てはめ散布 */}
+      {/* 感度・当てはめ（食料/衣料 切替） */}
       <div>
-        <h2 className="mb-2 text-base font-semibold">翻訳器の当てはめ（実績×予測）</h2>
-        <FitScatter
-          predictions={fitPoints}
-          category="food"
-        />
+        <div className="mb-2 flex items-center gap-2">
+          <h2 className="text-base font-semibold">感度と当てはめ</h2>
+          <div role="group" aria-label="分析カテゴリ" className="ml-auto flex gap-1">
+            {(["food", "clothing"] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setAnalysisCat(c)}
+                aria-pressed={analysisCat === c}
+                className={`rounded px-3 py-0.5 text-xs ${
+                  analysisCat === c ? "bg-gray-800 text-white" : "bg-gray-100"
+                }`}
+              >
+                {c === "food" ? "食料" : "衣料"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <h3 className="mb-1 text-sm font-semibold text-gray-700">
+          パラメーター感度（{analysisCat === "food" ? "食料" : "衣料"}）
+        </h3>
+        <SensitivityTable rows={sensRows} />
+
+        <h3 className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+          翻訳器の当てはめ（実績×予測）
+        </h3>
+        <FitScatter predictions={fitPoints} category={analysisCat} />
         <p className="mt-1 text-[10px] text-gray-400">
           ラグ最小モデルが当月の説明変数から消費を再現できているか（当月まで）。
         </p>

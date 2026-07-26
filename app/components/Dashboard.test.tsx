@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import Dashboard from "@/app/components/Dashboard";
 import type {
@@ -186,6 +186,15 @@ describe("Simulator interactions", () => {
     expect(screen.getByTestId("driver-reads")).toBeInTheDocument();
     // cpi.food と cpi.clothing の2ドライバー分の {グラフ＋スライダー} が並ぶ。
     expect(screen.getAllByTestId("driver-read-block")).toHaveLength(2);
+  });
+
+  it("shows the parameter sensitivity table and switches analysis category", () => {
+    renderDashboard();
+    const table = screen.getByTestId("sensitivity-table");
+    expect(table).toHaveTextContent("食料価格(CPI)");
+    const group = screen.getByRole("group", { name: "分析カテゴリ" });
+    fireEvent.click(within(group).getByRole("button", { name: "衣料" }));
+    expect(screen.getByTestId("sensitivity-table")).toHaveTextContent("被服価格(CPI)");
   });
 
   it("resets landings to the model forecast", () => {
