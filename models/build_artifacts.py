@@ -95,30 +95,27 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
     # 実質賃金効果は「名目給与の係数」と「そのカテゴリCPIの係数」の差で表現する。
     # 総合CPI(cpi.headline)は各カテゴリCPIと強く相関し係数を不安定化させたため
     # ドライバーからは外す（データソースとしては保持）。
+    # ダイエット方針（共線性・寄与の実測に基づく間引き）:
+    #  - 景気ウォッチャー現状/先行きDIは相関0.75で重複 → カテゴリで効く方を1本だけ残す
+    #    （食料=先行きDI、衣料=現状DI）。
+    #  - 標準化寄与がほぼ0の変数は削除（食料の名目賃金・大豆先物 等）。
     "food": {
         "household.food.real_yoy": AR_LAG,  # 前値（ナイーブ土台）
         "cpi.food": 1,
-        "wage.cash_earnings": 2,   # 名目給与YoY（公表ラグ約5-6週→2か月ラグ）
-        "cao.cci.attitude": 1,     # 消費者態度指数（景気動向指数個別系列・翌月上旬公表→1か月ラグ）
-        "cao.watcher.current": 1,  # 景気ウォッチャー現状DI（翌月上旬公表→1か月ラグ）
-        "cao.watcher.outlook": 1,
-        # 天候（外生・公知）: 酷暑/豪雨の供給・行動ショックで食料の前月差方向を補完。
-        # 先月の天候は予測時に既知（lag1）→ 短期ホライズンで正当に効く。
+        "cao.cci.attitude": 1,     # 消費者態度指数（景気動向指数個別系列・翌月上旬→1か月ラグ）
+        "cao.watcher.outlook": 1,  # 景気ウォッチャー先行きDI（食料で有意な方）
+        # 天候（外生・公知）: 感度は小さいが供給/行動ショックの参考として残置。
         "weather.summer_days": 1,
         "weather.heavy_rain_days": 1,
         "fut.wheat": 2,
-        "fut.soybean": 2,
-        "boj.usdjpy": 1,
     },
     "clothing": {
         "household.clothing.real_yoy": AR_LAG,  # 前値（ナイーブ土台）
         "cpi.clothing": 1,
-        "wage.cash_earnings": 2,
+        "wage.cash_earnings": 2,   # 名目給与YoY（衣料は所得感応・寄与大）
         "cao.cci.attitude": 1,
-        "cao.watcher.current": 1,
-        "cao.watcher.outlook": 1,
+        "cao.watcher.current": 1,  # 景気ウォッチャー現状DI（衣料で有意な方）
         "fut.cotton": 2,
-        "boj.usdjpy": 1,
     },
 }
 
