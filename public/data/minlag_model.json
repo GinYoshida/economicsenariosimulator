@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-22T07:02:29.598625+00:00",
+  "generated_at": "2026-09-02T14:45:44.290486+00:00",
   "data_vintage": "2026-08-01",
   "categories": [
     {
@@ -64,55 +64,55 @@
     {
       "category": "clothing",
       "intercept_by_month": [
-        -0.07251990831044208,
-        -0.07795482001034372,
-        -0.0817908729789028,
-        -0.07318038258004747,
-        -0.06783189412981837,
-        -0.08678313659871886,
-        -0.08452163585103054,
-        -0.07998889999312389,
-        -0.07949543742546378,
-        -0.08254903518530053,
-        -0.08400957147571814,
-        -0.0895393753983806
+        -0.07248978961982568,
+        -0.07791534593906568,
+        -0.08173498832884114,
+        -0.07311868865599203,
+        -0.06776423427725589,
+        -0.08682264719264518,
+        -0.08447009325314947,
+        -0.07998112791917425,
+        -0.07944682324484635,
+        -0.0825051998935739,
+        -0.08394928681775136,
+        -0.08945582546193062
       ],
-      "ar_coef": 0.7245043970485769,
+      "ar_coef": 0.7257897473099626,
       "ar_driver": "household.clothing.real_yoy",
       "drivers": [
         {
           "driver": "cpi.clothing",
           "label_ja": "被服価格(CPI)",
           "unit": "index",
-          "coef": -0.8507799659030516
+          "coef": -0.8440974013610179
         },
         {
           "driver": "wage.cash_earnings",
           "label_ja": "現金給与総額(名目)",
           "unit": "yen",
-          "coef": 0.3356355638357889
+          "coef": 0.323927700033961
         },
         {
           "driver": "cao.cci.attitude",
           "label_ja": "消費者態度指数",
           "unit": "index",
-          "coef": -0.000559835044293312
+          "coef": -0.0005631430643907795
         },
         {
           "driver": "cao.watcher.current",
           "label_ja": "景気ウォッチャー現状DI",
           "unit": "di",
-          "coef": 0.002263783390317608
+          "coef": 0.0022662364571237755
         },
         {
           "driver": "fut.cotton",
           "label_ja": "綿先物",
           "unit": "usd",
-          "coef": -0.00820548593398032
+          "coef": -0.008090535858472891
         }
       ],
-      "r2": 0.7220044459212687,
-      "resid_std": 0.033793804702173
+      "r2": 0.7216429134783697,
+      "resid_std": 0.033815771936802894
     }
   ],
   "fit": [
@@ -948,973 +948,973 @@
       "category": "clothing",
       "date": "2013-01-01",
       "actual": -0.004267943552634194,
-      "predicted": 0.010609119707842826
+      "predicted": 0.010594070875001929
     },
     {
       "category": "clothing",
       "date": "2013-02-01",
       "actual": -0.0076284357166958765,
-      "predicted": 0.01565017374290678
+      "predicted": 0.01571457430696667
     },
     {
       "category": "clothing",
       "date": "2013-03-01",
       "actual": 0.021693004155165358,
-      "predicted": 0.017399081925059234
+      "predicted": 0.017523206299275923
     },
     {
       "category": "clothing",
       "date": "2013-04-01",
       "actual": 0.045648800710147354,
-      "predicted": 0.04273415744903912
+      "predicted": 0.042803073671026315
     },
     {
       "category": "clothing",
       "date": "2013-05-01",
       "actual": 0.056056457282662585,
-      "predicted": 0.06260524078631213
+      "predicted": 0.06271357866638004
     },
     {
       "category": "clothing",
       "date": "2013-06-01",
       "actual": 0.05192979380382071,
-      "predicted": 0.04738066888051373
+      "predicted": 0.04732763380912691
     },
     {
       "category": "clothing",
       "date": "2013-07-01",
       "actual": 0.04636401279551846,
-      "predicted": 0.035190764627893736
+      "predicted": 0.035357248198105914
     },
     {
       "category": "clothing",
       "date": "2013-08-01",
       "actual": 0.028257457518783835,
-      "predicted": 0.03158988385668046
+      "predicted": 0.03177765405612422
     },
     {
       "category": "clothing",
       "date": "2013-09-01",
       "actual": 0.028437560386988525,
-      "predicted": 0.022321099223456695
+      "predicted": 0.022460383488672422
     },
     {
       "category": "clothing",
       "date": "2013-10-01",
       "actual": 0.03829509531602319,
-      "predicted": 0.02087734736508466
+      "predicted": 0.020982908307974918
     },
     {
       "category": "clothing",
       "date": "2013-11-01",
       "actual": 0.029660623133972813,
-      "predicted": 0.03323486609183554
+      "predicted": 0.03328493456238289
     },
     {
       "category": "clothing",
       "date": "2013-12-01",
       "actual": 0.0043100178514193415,
-      "predicted": 0.02628005397640544
+      "predicted": 0.026316046928924544
     },
     {
       "category": "clothing",
       "date": "2014-01-01",
       "actual": 0.058663109349313215,
-      "predicted": 0.022798691232353036
+      "predicted": 0.022864567310658834
     },
     {
       "category": "clothing",
       "date": "2014-02-01",
       "actual": 0.03158984824172636,
-      "predicted": 0.04583721809740027
+      "predicted": 0.04602893564321074
     },
     {
       "category": "clothing",
       "date": "2014-03-01",
       "actual": 0.07091454033597966,
-      "predicted": 0.049138535160923605
+      "predicted": 0.04917235547402328
     },
     {
       "category": "clothing",
       "date": "2014-04-01",
       "actual": -0.00908164725616741,
-      "predicted": 0.025458577367649143
+      "predicted": 0.0256312585351276
     },
     {
       "category": "clothing",
       "date": "2014-05-01",
       "actual": 0.007130284629002781,
-      "predicted": -0.019355807583857597
+      "predicted": -0.01923971213083047
     },
     {
       "category": "clothing",
       "date": "2014-06-01",
       "actual": -0.040537403858797484,
-      "predicted": -0.01426134433130092
+      "predicted": -0.014352833266796622
     },
     {
       "category": "clothing",
       "date": "2014-07-01",
       "actual": -0.04566199717471919,
-      "predicted": -0.034334777490187304
+      "predicted": -0.03454488989504961
     },
     {
       "category": "clothing",
       "date": "2014-08-01",
       "actual": -0.022453926983964756,
-      "predicted": -0.0504482193273571
+      "predicted": -0.050472048698193384
     },
     {
       "category": "clothing",
       "date": "2014-09-01",
       "actual": -0.02485127268206322,
-      "predicted": -0.03073901557905847
+      "predicted": -0.030685552927399162
     },
     {
       "category": "clothing",
       "date": "2014-10-01",
       "actual": -0.02287592062887278,
-      "predicted": -0.050330682347485695
+      "predicted": -0.05019930560297055
     },
     {
       "category": "clothing",
       "date": "2014-11-01",
       "actual": -0.034255470948071465,
-      "predicted": -0.05963599311661828
+      "predicted": -0.059450847036664325
     },
     {
       "category": "clothing",
       "date": "2014-12-01",
       "actual": -0.02830230145972405,
-      "predicted": -0.05613370413556097
+      "predicted": -0.05609773890458835
     },
     {
       "category": "clothing",
       "date": "2015-01-01",
       "actual": -0.058846414810103775,
-      "predicted": -0.04798556753112054
+      "predicted": -0.04775444119222366
     },
     {
       "category": "clothing",
       "date": "2015-02-01",
       "actual": -0.052709578331118966,
-      "predicted": -0.06604548210605089
+      "predicted": -0.06578275874418647
     },
     {
       "category": "clothing",
       "date": "2015-03-01",
       "actual": -0.09992272502091586,
-      "predicted": -0.060800084940195856
+      "predicted": -0.06049710926546353
     },
     {
       "category": "clothing",
       "date": "2015-04-01",
       "actual": -0.018904157742237082,
-      "predicted": -0.06410002651220306
+      "predicted": -0.06404381254788155
     },
     {
       "category": "clothing",
       "date": "2015-05-01",
       "actual": -0.019125358959298344,
-      "predicted": 0.0022113899677135285
+      "predicted": 0.002362929219804341
     },
     {
       "category": "clothing",
       "date": "2015-06-01",
       "actual": -0.013184487493539546,
-      "predicted": -0.037162887567603116
+      "predicted": -0.036721288081844744
     },
     {
       "category": "clothing",
       "date": "2015-07-01",
       "actual": -0.03634406393503823,
-      "predicted": -0.013603671230299957
+      "predicted": -0.013452955131790317
     },
     {
       "category": "clothing",
       "date": "2015-08-01",
       "actual": -0.05536749224128653,
-      "predicted": -0.03363320367889614
+      "predicted": -0.03350322918641964
     },
     {
       "category": "clothing",
       "date": "2015-09-01",
       "actual": -0.013539558414574918,
-      "predicted": -0.05353460533101082
+      "predicted": -0.05336278222123339
     },
     {
       "category": "clothing",
       "date": "2015-10-01",
       "actual": -0.03773143058510853,
-      "predicted": -0.02224248296160626
+      "predicted": -0.02206916663062683
     },
     {
       "category": "clothing",
       "date": "2015-11-01",
       "actual": -0.06769323960252482,
-      "predicted": -0.05225256187680642
+      "predicted": -0.052053974746641155
     },
     {
       "category": "clothing",
       "date": "2015-12-01",
       "actual": -0.12079275435534291,
-      "predicted": -0.07376184063843526
+      "predicted": -0.07349461505756258
     },
     {
       "category": "clothing",
       "date": "2016-01-01",
       "actual": -0.12014572057451516,
-      "predicted": -0.09321034987140263
+      "predicted": -0.09326490952430559
     },
     {
       "category": "clothing",
       "date": "2016-02-01",
       "actual": -0.09535886470719239,
-      "predicted": -0.10633155140699077
+      "predicted": -0.10641829931577752
     },
     {
       "category": "clothing",
       "date": "2016-03-01",
       "actual": -0.08025207286278946,
-      "predicted": -0.08520015617426184
+      "predicted": -0.0853404195650306
     },
     {
       "category": "clothing",
       "date": "2016-04-01",
       "actual": -0.095820299664847,
-      "predicted": -0.07753253009839046
+      "predicted": -0.0774609168277444
     },
     {
       "category": "clothing",
       "date": "2016-05-01",
       "actual": -0.06493965583878529,
-      "predicted": -0.08441511191612243
+      "predicted": -0.08435688767652955
     },
     {
       "category": "clothing",
       "date": "2016-06-01",
       "actual": -0.03179516416047686,
-      "predicted": -0.07805134245566572
+      "predicted": -0.07826561613862139
     },
     {
       "category": "clothing",
       "date": "2016-07-01",
       "actual": -0.020582259312240114,
-      "predicted": -0.04735015430069413
+      "predicted": -0.04733011083733066
     },
     {
       "category": "clothing",
       "date": "2016-08-01",
       "actual": -0.07353474512777695,
-      "predicted": -0.03850822263609646
+      "predicted": -0.03841591420754636
     },
     {
       "category": "clothing",
       "date": "2016-09-01",
       "actual": -0.11128057122857841,
-      "predicted": -0.07337831537538533
+      "predicted": -0.07336296258233285
     },
     {
       "category": "clothing",
       "date": "2016-10-01",
       "actual": -0.08837896534032604,
-      "predicted": -0.09673540350033352
+      "predicted": -0.09679946537451749
     },
     {
       "category": "clothing",
       "date": "2016-11-01",
       "actual": -0.06290291944229527,
-      "predicted": -0.07251239119643796
+      "predicted": -0.07255831425198826
     },
     {
       "category": "clothing",
       "date": "2016-12-01",
       "actual": -0.02185399157935819,
-      "predicted": -0.050268490698109514
+      "predicted": -0.05032125577510423
     },
     {
       "category": "clothing",
       "date": "2017-01-01",
       "actual": -0.01466420198226659,
-      "predicted": -0.015971347654726048
+      "predicted": -0.015949791116689344
     },
     {
       "category": "clothing",
       "date": "2017-02-01",
       "actual": -0.014802272772390731,
-      "predicted": -0.01938189272975071
+      "predicted": -0.019303093768488093
     },
     {
       "category": "clothing",
       "date": "2017-03-01",
       "actual": -0.003451690362011206,
-      "predicted": -0.012279618636069661
+      "predicted": -0.012192718371878061
     },
     {
       "category": "clothing",
       "date": "2017-04-01",
       "actual": -0.004794929251527395,
-      "predicted": 0.01182942322897082
+      "predicted": 0.011826728051798754
     },
     {
       "category": "clothing",
       "date": "2017-05-01",
       "actual": -0.030680832083437304,
-      "predicted": 0.015897317331184796
+      "predicted": 0.015865478321316462
     },
     {
       "category": "clothing",
       "date": "2017-06-01",
       "actual": -0.0641235769609032,
-      "predicted": -0.026469976893077736
+      "predicted": -0.026573039659633493
     },
     {
       "category": "clothing",
       "date": "2017-07-01",
       "actual": -0.04858735247545646,
-      "predicted": -0.04407688369324593
+      "predicted": -0.04408308530341361
     },
     {
       "category": "clothing",
       "date": "2017-08-01",
       "actual": -0.011363437343523186,
-      "predicted": -0.035100284203398606
+      "predicted": -0.035207906180399276
     },
     {
       "category": "clothing",
       "date": "2017-09-01",
       "actual": 0.023412129278884104,
-      "predicted": 0.002398187061367213
+      "predicted": 0.0022725541170387914
     },
     {
       "category": "clothing",
       "date": "2017-10-01",
       "actual": -0.005157922476503522,
-      "predicted": 0.0180815672386411
+      "predicted": 0.018069238489670195
     },
     {
       "category": "clothing",
       "date": "2017-11-01",
       "actual": 0.013413480759497184,
-      "predicted": 0.007301067800561473
+      "predicted": 0.007196889400799475
     },
     {
       "category": "clothing",
       "date": "2017-12-01",
       "actual": 0.010821072964404821,
-      "predicted": 0.017132842921915678
+      "predicted": 0.017116856161032437
     },
     {
       "category": "clothing",
       "date": "2018-01-01",
       "actual": 0.008076249869712337,
-      "predicted": 0.01435812299180804
+      "predicted": 0.01431788750110817
     },
     {
       "category": "clothing",
       "date": "2018-02-01",
       "actual": 0.0007609127808855254,
-      "predicted": 0.007823269685489603
+      "predicted": 0.007777691940232076
     },
     {
       "category": "clothing",
       "date": "2018-03-01",
       "actual": 0.014041264743105075,
-      "predicted": 0.013858819561939045
+      "predicted": 0.013702891384959198
     },
     {
       "category": "clothing",
       "date": "2018-04-01",
       "actual": 0.017691341417914175,
-      "predicted": 0.025419905815313296
+      "predicted": 0.025461396506788317
     },
     {
       "category": "clothing",
       "date": "2018-05-01",
       "actual": -0.0019302308051066068,
-      "predicted": 0.026165842101082
+      "predicted": 0.026096809983356742
     },
     {
       "category": "clothing",
       "date": "2018-06-01",
       "actual": -0.010491417576216558,
-      "predicted": 0.0025490730356522717
+      "predicted": 0.002164311399374952
     },
     {
       "category": "clothing",
       "date": "2018-07-01",
       "actual": -0.03989720061673496,
-      "predicted": -0.01332129884609913
+      "predicted": -0.013414656349729409
     },
     {
       "category": "clothing",
       "date": "2018-08-01",
       "actual": -0.01597394055976405,
-      "predicted": -0.025242227592981913
+      "predicted": -0.025379582987457697
     },
     {
       "category": "clothing",
       "date": "2018-09-01",
       "actual": -0.01707292417194765,
-      "predicted": -0.011824125132966594
+      "predicted": -0.011880723276671182
     },
     {
       "category": "clothing",
       "date": "2018-10-01",
       "actual": 0.00017091973279725892,
-      "predicted": -0.012469585936531427
+      "predicted": -0.01257048865863912
     },
     {
       "category": "clothing",
       "date": "2018-11-01",
       "actual": -0.0042585701744647,
-      "predicted": 0.006090175095938843
+      "predicted": 0.005936005847818573
     },
     {
       "category": "clothing",
       "date": "2018-12-01",
       "actual": 0.009356007993541379,
-      "predicted": -0.0029527811616725658
+      "predicted": -0.0030800640894201453
     },
     {
       "category": "clothing",
       "date": "2019-01-01",
       "actual": 0.016751955420254316,
-      "predicted": 0.005758351547135443
+      "predicted": 0.00585881666263903
     },
     {
       "category": "clothing",
       "date": "2019-02-01",
       "actual": 0.016979254846313723,
-      "predicted": 0.014040285427822236
+      "predicted": 0.014146717737541087
     },
     {
       "category": "clothing",
       "date": "2019-03-01",
       "actual": -0.009294219423626479,
-      "predicted": 0.008538007211327137
+      "predicted": 0.008754633691026442
     },
     {
       "category": "clothing",
       "date": "2019-04-01",
       "actual": -0.012322325685438376,
-      "predicted": 0.002879294363581919
+      "predicted": 0.002953681394887289
     },
     {
       "category": "clothing",
       "date": "2019-05-01",
       "actual": 0.009179841537193867,
-      "predicted": 0.0038643588232716575
+      "predicted": 0.00391165928987601
     },
     {
       "category": "clothing",
       "date": "2019-06-01",
       "actual": 0.02553644332668999,
-      "predicted": -0.001185287318285877
+      "predicted": -0.0012981553476716506
     },
     {
       "category": "clothing",
       "date": "2019-07-01",
       "actual": 0.03194416390238727,
-      "predicted": 0.0011408057726515486
+      "predicted": 0.0013010120052075053
     },
     {
       "category": "clothing",
       "date": "2019-08-01",
       "actual": 0.025350234698151636,
-      "predicted": 0.015378308659659584
+      "predicted": 0.015427412410020061
     },
     {
       "category": "clothing",
       "date": "2019-09-01",
       "actual": 0.07239939950073497,
-      "predicted": 0.027347695245811182
+      "predicted": 0.027343159610739395
     },
     {
       "category": "clothing",
       "date": "2019-10-01",
       "actual": 0.04863470163707506,
-      "predicted": 0.01907393674262324
+      "predicted": 0.01922954260827646
     },
     {
       "category": "clothing",
       "date": "2019-11-01",
       "actual": 0.01197325955912095,
-      "predicted": 0.009191447667105918
+      "predicted": 0.009332589746881462
     },
     {
       "category": "clothing",
       "date": "2019-12-01",
       "actual": -0.07942304899834385,
-      "predicted": -0.024379241772895743
+      "predicted": -0.024197961638282355
     },
     {
       "category": "clothing",
       "date": "2020-01-01",
       "actual": -0.0641513869560378,
-      "predicted": -0.06809074305378163
+      "predicted": -0.06823702126782959
     },
     {
       "category": "clothing",
       "date": "2020-02-01",
       "actual": -0.0669957714220087,
-      "predicted": -0.09464355254261478
+      "predicted": -0.09476761214026411
     },
     {
       "category": "clothing",
       "date": "2020-03-01",
       "actual": -0.12433335930718648,
-      "predicted": -0.12428255936086151
+      "predicted": -0.12432410188878448
     },
     {
       "category": "clothing",
       "date": "2020-04-01",
       "actual": -0.1997671172460054,
-      "predicted": -0.1661544982131753
+      "predicted": -0.16616015044656496
     },
     {
       "category": "clothing",
       "date": "2020-05-01",
       "actual": -0.27230580551948047,
-      "predicted": -0.20724472797020005
+      "predicted": -0.2071238229597861
     },
     {
       "category": "clothing",
       "date": "2020-06-01",
       "actual": -0.19600453065507664,
-      "predicted": -0.22031268479687222
+      "predicted": -0.22038772846065435
     },
     {
       "category": "clothing",
       "date": "2020-07-01",
       "actual": -0.16811969930483825,
-      "predicted": -0.16149676871805568
+      "predicted": -0.16141223947855327
     },
     {
       "category": "clothing",
       "date": "2020-08-01",
       "actual": -0.1392776430370037,
-      "predicted": -0.1339930886726666
+      "predicted": -0.13394224455502562
     },
     {
       "category": "clothing",
       "date": "2020-09-01",
       "actual": -0.21926932141971403,
-      "predicted": -0.10515771733926729
+      "predicted": -0.10504198455932613
     },
     {
       "category": "clothing",
       "date": "2020-10-01",
       "actual": -0.14103849164326496,
-      "predicted": -0.14391189845724667
+      "predicted": -0.14401485623046276
     },
     {
       "category": "clothing",
       "date": "2020-11-01",
       "actual": -0.1341198584351662,
-      "predicted": -0.11134615739495422
+      "predicted": -0.11124068108716127
     },
     {
       "category": "clothing",
       "date": "2020-12-01",
       "actual": -0.07972739164698968,
-      "predicted": -0.13834955460607298
+      "predicted": -0.1380930460498867
     },
     {
       "category": "clothing",
       "date": "2021-01-01",
       "actual": -0.1858430527736772,
-      "predicted": -0.1001752692371233
+      "predicted": -0.10005925669317822
     },
     {
       "category": "clothing",
       "date": "2021-02-01",
       "actual": -0.1852336398738268,
-      "predicted": -0.15555190750940245
+      "predicted": -0.15562152292105666
     },
     {
       "category": "clothing",
       "date": "2021-03-01",
       "actual": -0.1341837701297216,
-      "predicted": -0.13541205759949881
+      "predicted": -0.1355282866533294
     },
     {
       "category": "clothing",
       "date": "2021-04-01",
       "actual": 0.01824052983122748,
-      "predicted": -0.10917057939353927
+      "predicted": -0.10939800880595249
     },
     {
       "category": "clothing",
       "date": "2021-05-01",
       "actual": 0.11830680773840833,
-      "predicted": -0.00011619935704042239
+      "predicted": -0.00020743509121995407
     },
     {
       "category": "clothing",
       "date": "2021-06-01",
       "actual": 0.051995377366259254,
-      "predicted": 0.06803144598875915
+      "predicted": 0.06820011277714248
     },
     {
       "category": "clothing",
       "date": "2021-07-01",
       "actual": -0.00009162886694839371,
-      "predicted": 0.02932218386410733
+      "predicted": 0.029455591604290163
     },
     {
       "category": "clothing",
       "date": "2021-08-01",
       "actual": -0.08667440615651027,
-      "predicted": -0.0409881814458132
+      "predicted": -0.04099163981187
     },
     {
       "category": "clothing",
       "date": "2021-09-01",
       "actual": -0.062147028866768296,
-      "predicted": -0.07449172089550535
+      "predicted": -0.07452701474796238
     },
     {
       "category": "clothing",
       "date": "2021-10-01",
       "actual": -0.09958168630961184,
-      "predicted": -0.025317836910086627
+      "predicted": -0.0253129067902928
     },
     {
       "category": "clothing",
       "date": "2021-11-01",
       "actual": -0.025212787286800282,
-      "predicted": -0.04907727397648015
+      "predicted": -0.049153037134841315
     },
     {
       "category": "clothing",
       "date": "2021-12-01",
       "actual": 0.012130490298537818,
-      "predicted": -0.0028274910606327225
+      "predicted": -0.002643618532092759
     },
     {
       "category": "clothing",
       "date": "2022-01-01",
       "actual": 0.06139913864604855,
-      "predicted": -0.022721331299031096
+      "predicted": -0.02270093263947464
     },
     {
       "category": "clothing",
       "date": "2022-02-01",
       "actual": -0.006719249911834924,
-      "predicted": 0.009363174350972614
+      "predicted": 0.009444855855838458
     },
     {
       "category": "clothing",
       "date": "2022-03-01",
       "actual": -0.011308819552976098,
-      "predicted": 0.0016857728628322521
+      "predicted": 0.0016311257267825202
     },
     {
       "category": "clothing",
       "date": "2022-04-01",
       "actual": -0.004307442601616973,
-      "predicted": 0.0076754129332845256
+      "predicted": 0.007720606075211356
     },
     {
       "category": "clothing",
       "date": "2022-05-01",
       "actual": 0.06458109673153944,
-      "predicted": 0.022444681958797577
+      "predicted": 0.022533589589438158
     },
     {
       "category": "clothing",
       "date": "2022-06-01",
       "actual": 0.06364759750205333,
-      "predicted": 0.05707223674586087
+      "predicted": 0.05700341370326016
     },
     {
       "category": "clothing",
       "date": "2022-07-01",
       "actual": 0.037644704711178756,
-      "predicted": 0.03057615484562365
+      "predicted": 0.030669544982087474
     },
     {
       "category": "clothing",
       "date": "2022-08-01",
       "actual": 0.03441054202219126,
-      "predicted": 0.01660967070886324
+      "predicted": 0.016596390836509434
     },
     {
       "category": "clothing",
       "date": "2022-09-01",
       "actual": 0.05596257358471979,
-      "predicted": 0.03275586993012884
+      "predicted": 0.0327082241957964
     },
     {
       "category": "clothing",
       "date": "2022-10-01",
       "actual": 0.10370915332064364,
-      "predicted": 0.04405206837029445
+      "predicted": 0.04414504697441808
     },
     {
       "category": "clothing",
       "date": "2022-11-01",
       "actual": 0.03671267350626328,
-      "predicted": 0.07096221599965
+      "predicted": 0.07111433928258633
     },
     {
       "category": "clothing",
       "date": "2022-12-01",
       "actual": 0.017222065674895076,
-      "predicted": 0.02274672996325007
+      "predicted": 0.022579399328663027
     },
     {
       "category": "clothing",
       "date": "2023-01-01",
       "actual": -0.012393685466930723,
-      "predicted": 0.0048179099813306925
+      "predicted": 0.004966140732651544
     },
     {
       "category": "clothing",
       "date": "2023-02-01",
       "actual": 0.058685773308654765,
-      "predicted": -0.012143512178838432
+      "predicted": -0.011995001341981906
     },
     {
       "category": "clothing",
       "date": "2023-03-01",
       "actual": 0.058796545637453436,
-      "predicted": 0.04520680038919536
+      "predicted": 0.04540929666437489
     },
     {
       "category": "clothing",
       "date": "2023-04-01",
       "actual": 0.010703918343126265,
-      "predicted": 0.051896070190675575
+      "predicted": 0.052165151806149
     },
     {
       "category": "clothing",
       "date": "2023-05-01",
       "actual": -0.03560742239617428,
-      "predicted": 0.02424750919012389
+      "predicted": 0.024214216802084562
     },
     {
       "category": "clothing",
       "date": "2023-06-01",
       "actual": -0.05565294649235464,
-      "predicted": -0.03604684664708271
+      "predicted": -0.03614323188272957
     },
     {
       "category": "clothing",
       "date": "2023-07-01",
       "actual": -0.001101563410099593,
-      "predicted": -0.05237530689264348
+      "predicted": -0.052258423781743335
     },
     {
       "category": "clothing",
       "date": "2023-08-01",
       "actual": -0.012130077616222201,
-      "predicted": -0.01269785939515921
+      "predicted": -0.012514046853793925
     },
     {
       "category": "clothing",
       "date": "2023-09-01",
       "actual": -0.05877823048619868,
-      "predicted": -0.02054319818693713
+      "predicted": -0.020353593758452547
     },
     {
       "category": "clothing",
       "date": "2023-10-01",
       "actual": -0.1162526793876647,
-      "predicted": -0.05411190815262487
+      "predicted": -0.05409906499219713
     },
     {
       "category": "clothing",
       "date": "2023-11-01",
       "actual": -0.03232999354499725,
-      "predicted": -0.09635722796156405
+      "predicted": -0.09634232562347084
     },
     {
       "category": "clothing",
       "date": "2023-12-01",
       "actual": 0.004863312219444249,
-      "predicted": -0.04180289847647424
+      "predicted": -0.04164642500274802
     },
     {
       "category": "clothing",
       "date": "2024-01-01",
       "actual": 0.04067105840035671,
-      "predicted": 0.0019241840263116011
+      "predicted": 0.0017027635873943098
     },
     {
       "category": "clothing",
       "date": "2024-02-01",
       "actual": 0.020418148826853888,
-      "predicted": 0.03065502991310931
+      "predicted": 0.030510597016216376
     },
     {
       "category": "clothing",
       "date": "2024-03-01",
       "actual": 0.045582939276635,
-      "predicted": 0.020447361591188734
+      "predicted": 0.020313117013747495
     },
     {
       "category": "clothing",
       "date": "2024-04-01",
       "actual": 0.07661218321718637,
-      "predicted": 0.04504132622953283
+      "predicted": 0.04484846064508506
     },
     {
       "category": "clothing",
       "date": "2024-05-01",
       "actual": 0.037545769829360344,
-      "predicted": 0.06778080848774126
+      "predicted": 0.06757911632738696
     },
     {
       "category": "clothing",
       "date": "2024-06-01",
       "actual": 0.061694963331371255,
-      "predicted": 0.03640547161730914
+      "predicted": 0.035594767781899544
     },
     {
       "category": "clothing",
       "date": "2024-07-01",
       "actual": 0.0046684728953504395,
-      "predicted": 0.050540948504653016
+      "predicted": 0.0500866767962084
     },
     {
       "category": "clothing",
       "date": "2024-08-01",
       "actual": 0.027323683335621074,
-      "predicted": 0.012396561467893058
+      "predicted": 0.011930776154978742
     },
     {
       "category": "clothing",
       "date": "2024-09-01",
       "actual": 0.06201367977946567,
-      "predicted": 0.02204894228291536
+      "predicted": 0.0216849577770796
     },
     {
       "category": "clothing",
       "date": "2024-10-01",
       "actual": 0.03935526024287361,
-      "predicted": 0.042427576753972504
+      "predicted": 0.04212886031953601
     },
     {
       "category": "clothing",
       "date": "2024-11-01",
       "actual": -0.031445111565675275,
-      "predicted": 0.03354378422938044
+      "predicted": 0.03306789924278705
     },
     {
       "category": "clothing",
       "date": "2024-12-01",
       "actual": -0.0797908603859407,
-      "predicted": -0.017728486879977454
+      "predicted": -0.01842921840170423
     },
     {
       "category": "clothing",
       "date": "2025-01-01",
       "actual": -0.059258910043984835,
-      "predicted": -0.06369943682453902
+      "predicted": -0.06381900206762246
     },
     {
       "category": "clothing",
       "date": "2025-02-01",
       "actual": -0.053272409449242684,
-      "predicted": -0.05193327646625735
+      "predicted": -0.05215269994962467
     },
     {
       "category": "clothing",
       "date": "2025-03-01",
       "actual": -0.075436214715023,
-      "predicted": -0.045994242243614744
+      "predicted": -0.04611018803601896
     },
     {
       "category": "clothing",
       "date": "2025-04-01",
       "actual": -0.05465212279425602,
-      "predicted": -0.06048337997236679
+      "predicted": -0.06059167566895628
     },
     {
       "category": "clothing",
       "date": "2025-05-01",
       "actual": 0.014642253466955838,
-      "predicted": -0.04036927670221187
+      "predicted": -0.0403912655146296
     },
     {
       "category": "clothing",
       "date": "2025-06-01",
       "actual": 0.006530456950117484,
-      "predicted": -0.00719598771288088
+      "predicted": -0.007406744455508693
     },
     {
       "category": "clothing",
       "date": "2025-07-01",
       "actual": 0.011888016244505195,
-      "predicted": -0.008088390990943675
+      "predicted": -0.008250107355420186
     },
     {
       "category": "clothing",
       "date": "2025-08-01",
       "actual": 0.00005183789889340318,
-      "predicted": -0.006745051333243615
+      "predicted": -0.006687534569331605
     },
     {
       "category": "clothing",
       "date": "2025-09-01",
       "actual": -0.0064669437942969825,
-      "predicted": -0.008383604437000772
+      "predicted": -0.008435173649293415
     },
     {
       "category": "clothing",
       "date": "2025-10-01",
       "actual": 0.008400212650759594,
-      "predicted": -0.011844451675983622
+      "predicted": -0.011942095891347232
     },
     {
       "category": "clothing",
       "date": "2025-11-01",
       "actual": 0.01674624978601909,
-      "predicted": -0.002853615616834837
+      "predicted": -0.002845142457604574
     },
     {
       "category": "clothing",
       "date": "2025-12-01",
       "actual": 0.01225934926678581,
-      "predicted": 0.0031168304114893852
+      "predicted": 0.003063608876102339
     },
     {
       "category": "clothing",
       "date": "2026-01-01",
       "actual": -0.013407215611574355,
-      "predicted": 0.004170645898785685
+      "predicted": 0.004064087745842049
     },
     {
       "category": "clothing",
       "date": "2026-02-01",
       "actual": -0.03757397759178468,
-      "predicted": -0.00919823804957065
+      "predicted": -0.009442646090274745
     },
     {
       "category": "clothing",
       "date": "2026-03-01",
       "actual": -0.015071744469457063,
-      "predicted": -0.03453198144344046
+      "predicted": -0.03474012416904758
     },
     {
       "category": "clothing",
       "date": "2026-04-01",
       "actual": -0.04418610200539608,
-      "predicted": -0.010432524116376019
+      "predicted": -0.01069516311685171
     },
     {
       "category": "clothing",
       "date": "2026-05-01",
       "actual": -0.03379296990394132,
-      "predicted": -0.024655789408008354
+      "predicted": -0.02489801911773567
     },
     {
       "category": "clothing",
       "date": "2026-06-01",
       "actual": -0.09488831717767059,
-      "predicted": -0.036095750640159116
+      "predicted": -0.03448481427206106
     }
   ]
 }
