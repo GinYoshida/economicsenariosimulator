@@ -3,18 +3,13 @@ name: Batch (refresh artifacts)
 # 定期バッチ: 公的API/先物からデータを取得 → DuckDB → 成果物JSONを生成し、
 # public/data/*.json の差分のみをこのブランチにコミットする。
 #
-# いまは手動実行（workflow_dispatch）のみ。実データで一度グリーンになる条件:
-#   1. リポジトリ Secrets に ESTAT_APP_ID を登録
-#   2. レジストリの未確定パラメータを確定
-#      - e-Stat: stats_data_id（getStatsList 探索）
-#      - 日銀: csv_url（series_code からのCSVダウンロードURL）
-#      - 内閣府: Excel のダウンロードURL/レイアウト（cao_provider 実装）
-# これらが揃ったら、下の schedule のコメントを外して定期実行を有効化する。
+# 手動実行（workflow_dispatch）に加え、週次（毎週月曜 10:00 JST）で自動実行する。
+# スケジュールはリポジトリのデフォルトブランチ上のワークフローのみ発火する
+# （このブランチが現在のデフォルト）。ESTAT_APP_ID など前提条件は登録済み。
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: "0 1 4-10 * *"   # 家計調査公表期（毎月上旬・JST昼前後）
-  #   - cron: "0 20 * * *"     # 先物の日次更新
+  schedule:
+    - cron: "0 1 * * 1"   # 毎週月曜 01:00 UTC = 10:00 JST（最新の月次・先物・天候を取得）
 
 permissions:
   contents: write
