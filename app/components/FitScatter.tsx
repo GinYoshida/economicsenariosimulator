@@ -126,7 +126,8 @@ export default function FitScatter({
     <section aria-label="適合散布図" data-testid="fit-scatter">
       <div className="mb-1 flex items-center justify-between">
         <p className="text-xs text-gray-500">
-          {CATEGORY_LABEL[category] ?? category}: 実績(横)×予測(縦)・対角線に近いほど高精度（n={pts.length}）
+          {CATEGORY_LABEL[category] ?? category}: 実質消費支出・前年同月比（％）の
+          実績(横)×予測(縦)・対角線に近いほど高精度（n={pts.length}）
         </p>
         <div role="group" aria-label="表示モード" className="flex gap-1">
           {(["scatter", "density"] as Mode[]).map((m) => (

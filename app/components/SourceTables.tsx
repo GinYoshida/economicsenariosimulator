@@ -63,6 +63,11 @@ export default function SourceTables({ file }: { file: SeriesFile | null }) {
       <p className="text-xs text-gray-500">
         生成日時: {file.generated_at.slice(0, 10)}
       </p>
+      <p className="rounded bg-gray-50 p-2 text-[11px] leading-relaxed text-gray-500">
+        ここは<b>モデルの入力となる生系列</b>（水準または前年比・出典そのまま）です。
+        目的の「実質消費支出・前年同月比」はこれらを変換・実質化した後の値で、この表とは別物です。
+        家計調査（<code>household.*</code>）は名目金額、CPIやDIは各出典の単位で表示しています。
+      </p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {file.series.map((s) => (
           <SeriesCard key={s.series_id} s={s} />

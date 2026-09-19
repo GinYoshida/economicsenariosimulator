@@ -16,6 +16,7 @@ import {
   type SeriesFile,
   type SourceMeta,
 } from "@/app/lib/artifacts";
+import { TARGET_DEF } from "@/app/lib/labels";
 
 type Tab = "scenario" | "model" | "data";
 const TAB_LABELS: Record<Tab, string> = {
@@ -49,8 +50,11 @@ export default function Dashboard({
       <header>
         <h1 className="text-lg font-bold">日本 消費シナリオ シミュレータ</h1>
         <p className="text-xs text-gray-500">
-          食料・衣料の前年比を、あなたの前提（説明変数の読み）で試算（データ vintage:{" "}
-          {categories[0]?.data_vintage ?? "—"}）
+          家計調査（二人以上の世帯）実質消費支出・前年同月比（％）を、あなたの前提（説明変数の読み）で試算
+          （データ vintage: {categories[0]?.data_vintage ?? "—"}）
+        </p>
+        <p className="mt-1 rounded bg-gray-50 p-2 text-[11px] leading-relaxed text-gray-500">
+          {TARGET_DEF}
         </p>
       </header>
 

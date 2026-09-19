@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { metricPasses, type Backtest, type Coefficients } from "@/app/lib/artifacts";
+import { TARGET_DEF } from "@/app/lib/labels";
 
 const CATEGORY_LABEL: Record<string, string> = { food: "食料", clothing: "衣料" };
 
@@ -65,6 +66,14 @@ export default function ModelExplanation({
 
   return (
     <section aria-label="モデルの解説" data-testid="model-explanation" className="flex flex-col gap-5">
+      <div
+        data-testid="target-definition"
+        className="rounded border border-gray-200 bg-gray-50 p-3 text-sm leading-relaxed text-gray-700"
+      >
+        <h2 className="mb-1 text-base font-semibold">目的変数（この指標）</h2>
+        <p>{TARGET_DEF}</p>
+      </div>
+
       <div className="text-sm leading-relaxed text-gray-700">
         <h2 className="mb-1 text-base font-semibold">手法</h2>
         <p>

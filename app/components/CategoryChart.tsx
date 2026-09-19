@@ -49,6 +49,7 @@ export default function CategoryChart({
   maWindow = 3,
   yDomain = ["auto", "auto"],
   testId,
+  subtitle,
 }: {
   label: string;
   color: string;
@@ -60,6 +61,7 @@ export default function CategoryChart({
   maWindow?: number;
   yDomain?: [AxisBound, AxisBound];
   testId?: string;
+  subtitle?: string; // タイトル下に添える指標の説明（縦軸の意味）
 }) {
   const ctr = centerColor ?? color;
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -98,6 +100,7 @@ export default function CategoryChart({
       <p className="mb-1 text-sm font-semibold" style={{ color }}>
         {label}（{horizon}カ月先予測）
       </p>
+      {subtitle && <p className="mb-1 text-[10px] text-gray-400">縦軸: {subtitle}</p>}
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>

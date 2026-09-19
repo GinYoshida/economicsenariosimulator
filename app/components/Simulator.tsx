@@ -24,6 +24,7 @@ import type {
 } from "@/app/lib/artifacts";
 import { addMonths } from "@/app/lib/fanForecast";
 import { buildLinearPath, simulateConsumption } from "@/app/lib/minlagSim";
+import { TARGET_SHORT, driverAxisLabel } from "@/app/lib/labels";
 
 // 横軸（表示期間）の選択肢。既定は直近3年＋予測。
 const WINDOW_OPTIONS: { key: string; label: string; months: number }[] = [
@@ -225,6 +226,8 @@ export default function Simulator({
       <p className="rounded bg-amber-50 p-2 text-xs text-amber-900">
         将来はモデルに当てさせず、<b>あなたが各説明変数の「読み（着地値）」を置き</b>、その前提で消費を試算します。
         まず各変数の状態空間予測（帯付き）を出発点に、上下に調整してください。予測は<b>ラグ最小</b>で翻訳します。
+        <br />
+        出力＝<b>{TARGET_SHORT}</b>。
       </p>
 
       {/* 表示期間（横軸）＋予測ホライズン */}
@@ -260,8 +263,8 @@ export default function Simulator({
           </select>
         </label>
         <span className="ml-auto flex gap-3" data-testid="sim-next">
-          <span data-testid="food-next">食料: {pct(sim.food?.[0]?.mean)}</span>
-          <span data-testid="clothing-next">衣料: {pct(sim.clothing?.[0]?.mean)}</span>
+          <span data-testid="food-next">食料 実質前年比: {pct(sim.food?.[0]?.mean)}</span>
+          <span data-testid="clothing-next">衣料 実質前年比: {pct(sim.clothing?.[0]?.mean)}</span>
         </span>
       </div>
 
@@ -274,6 +277,7 @@ export default function Simulator({
           horizon={horizon}
           rows={foodRows}
           boundaryDate={lastDate}
+          subtitle={TARGET_SHORT}
           testId="forecast-chart-food"
         />
         <CategoryChart
@@ -283,6 +287,7 @@ export default function Simulator({
           horizon={horizon}
           rows={clothingRows}
           boundaryDate={lastDate}
+          subtitle={TARGET_SHORT}
           testId="forecast-chart-clothing"
         />
       </div>
@@ -342,6 +347,7 @@ export default function Simulator({
         <h2 className="mb-1 text-base font-semibold">説明変数の読み（着地値）と予測</h2>
         <p className="mb-2 text-[10px] text-gray-400">
           各グラフの点線＝あなたの読み（現在→着地の想定）。スライダーを動かすと予測中心と信頼帯が一緒に動きます。
+          縦軸は変数ごとに異なります（前年同月比／DI水準／指数／割合）。各グラフに明記しています。
         </p>
         <div className="flex flex-col gap-3">
           {drivers.map((d) => (
@@ -350,6 +356,7 @@ export default function Simulator({
               driver={driverForecastMap[d.driver] ?? null}
               label={d.label}
               unit={d.unit}
+              axisLabel={driverAxisLabel(d.driver, d.unit)}
               current={currentOf[d.driver] ?? 0}
               modelLanding={modelLandingOf[d.driver] ?? currentOf[d.driver] ?? 0}
               landing={landingOf(d.driver)}
@@ -432,7 +439,12 @@ function ScenarioCompare({
   return (
     <div data-testid="scenario-compare">
       <div className="mb-1 flex items-center gap-2">
-        <h2 className="text-base font-semibold">保存シナリオ比較</h2>
+        <h2 className="text-base font-semibold">
+          保存シナリオ比較
+          <span className="ml-1 text-[10px] font-normal text-gray-400">
+            （実質消費支出・前年同月比）
+          </span>
+        </h2>
         <div role="group" aria-label="比較カテゴリ" className="ml-auto flex gap-1">
           {(["food", "clothing"] as const).map((c) => (
             <button

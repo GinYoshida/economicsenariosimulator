@@ -34,6 +34,7 @@ export default function DriverReadBlock({
   driver,
   label,
   unit,
+  axisLabel,
   current,
   modelLanding,
   landing,
@@ -46,6 +47,7 @@ export default function DriverReadBlock({
   driver: DriverForecast | null;
   label: string;
   unit: string;
+  axisLabel?: string; // 縦軸の意味（前年同月比／DI水準／指数／割合 など）
   current: number;
   modelLanding: number;
   landing: number;
@@ -116,6 +118,9 @@ export default function DriverReadBlock({
           現在 {fmtVal(current, unit)} → モデル {fmtVal(modelLanding, unit)}
         </span>
       </div>
+      {axisLabel && (
+        <p className="text-[10px] text-gray-400">縦軸: {axisLabel}</p>
+      )}
 
       {driver && (
         <div className="mt-1 h-44 w-full">

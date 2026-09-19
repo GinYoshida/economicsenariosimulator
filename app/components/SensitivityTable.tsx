@@ -61,7 +61,7 @@ export default function SensitivityTable({ rows }: { rows: SensRow[] }) {
         </tbody>
       </table>
       <p className="mt-1 text-[10px] text-gray-400">
-        感度(1σ)＝その変数が標準的に1σ動いたとき消費前年比が何pp動くか。
+        感度(1σ)＝その変数が標準的に1σ動いたとき<b>実質消費支出・前年同月比（％）</b>が何pp動くか。
         今の寄与＝あなたの着地値と現在値の差が与える影響。青=プラス／赤=マイナス。
       </p>
     </div>
