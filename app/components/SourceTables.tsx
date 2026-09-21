@@ -3,14 +3,65 @@
 import type { SeriesData, SeriesFile } from "@/app/lib/artifacts";
 import { seriesInfo, unitNote } from "@/app/lib/seriesInfo";
 
-const RECENT = 12; // 各系列で表示する直近件数
+const RECENT = 36; // 各系列で表示する直近件数（3年＝前年同月比の動向が見えるように）
 
 function fmt(v: number | null): string {
   return v == null ? "—" : v.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+/** 直近データの小さな折れ線（動向を一目で把握）。欠測は線を切る。 */
+function Sparkline({ points }: { points: { date: string; value: number | null }[] }) {
+  const W = 100;
+  const H = 28;
+  const vals = points.map((p) => p.value);
+  const nums = vals.filter((v): v is number => v != null);
+  if (nums.length < 2) return null;
+  const lo = Math.min(...nums);
+  const hi = Math.max(...nums);
+  const span = hi - lo || 1;
+  const n = points.length;
+  const x = (i: number) => (n === 1 ? 0 : (i / (n - 1)) * W);
+  const y = (v: number) => H - ((v - lo) / span) * H;
+
+  // 欠測で分割した折れ線セグメント。
+  const segs: string[] = [];
+  let cur: string[] = [];
+  points.forEach((p, i) => {
+    if (p.value == null) {
+      if (cur.length) {
+        segs.push(cur.join(" "));
+        cur = [];
+      }
+    } else {
+      cur.push(`${x(i).toFixed(1)},${y(p.value).toFixed(1)}`);
+    }
+  });
+  if (cur.length) segs.push(cur.join(" "));
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="mt-2 h-8 w-full"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      {segs.map((pts, i) => (
+        <polyline
+          key={i}
+          points={pts}
+          fill="none"
+          stroke="#2563eb"
+          strokeWidth={1.2}
+          vectorEffect="non-scaling-stroke"
+        />
+      ))}
+    </svg>
+  );
+}
+
 function SeriesCard({ s }: { s: SeriesData }) {
-  const recent = s.points.slice(-RECENT).reverse();
+  const window = s.points.slice(-RECENT);
+  const recent = [...window].reverse();
   const info = seriesInfo(s.series_id);
   return (
     <div className="rounded border border-gray-200 p-3" data-testid={`series-${s.series_id}`}>
@@ -32,24 +83,27 @@ function SeriesCard({ s }: { s: SeriesData }) {
       >
         出典: {s.name}
       </a>
-      <table className="mt-2 w-full text-sm">
-        <thead>
-          <tr className="text-left text-gray-500">
-            <th>年月</th>
-            <th className="text-right">値</th>
-          </tr>
-        </thead>
-        <tbody>
-          {recent.map((p) => (
-            <tr key={p.date}>
-              <td className="tabular-nums">{p.date.slice(0, 7)}</td>
-              <td className="text-right tabular-nums">{fmt(p.value)}</td>
+      <Sparkline points={window} />
+      <div className="mt-1 max-h-52 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-white">
+            <tr className="text-left text-gray-500">
+              <th>年月</th>
+              <th className="text-right">値</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {recent.map((p) => (
+              <tr key={p.date}>
+                <td className="tabular-nums">{p.date.slice(0, 7)}</td>
+                <td className="text-right tabular-nums">{fmt(p.value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p className="mt-1 text-[10px] text-gray-400">
-        全{s.points.length}件のうち直近{Math.min(RECENT, s.points.length)}件
+        全{s.points.length}件のうち直近{Math.min(RECENT, s.points.length)}件（約3年）
       </p>
     </div>
   );
