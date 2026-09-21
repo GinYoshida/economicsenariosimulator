@@ -26,7 +26,7 @@ describe("SourceTables", () => {
   it("renders a per-series table with source link and null handling", () => {
     render(<SourceTables file={file} />);
     const card = screen.getByTestId("series-household.food.real_yoy");
-    expect(within(card).getByRole("link", { name: "総務省 家計調査" })).toHaveAttribute(
+    expect(within(card).getByRole("link", { name: /総務省 家計調査/ })).toHaveAttribute(
       "href",
       "https://www.stat.go.jp/data/kakei/",
     );

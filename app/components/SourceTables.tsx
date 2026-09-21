@@ -1,6 +1,7 @@
 "use client";
 
 import type { SeriesData, SeriesFile } from "@/app/lib/artifacts";
+import { seriesInfo, unitNote } from "@/app/lib/seriesInfo";
 
 const RECENT = 12; // 各系列で表示する直近件数
 
@@ -10,19 +11,26 @@ function fmt(v: number | null): string {
 
 function SeriesCard({ s }: { s: SeriesData }) {
   const recent = s.points.slice(-RECENT).reverse();
+  const info = seriesInfo(s.series_id);
   return (
     <div className="rounded border border-gray-200 p-3" data-testid={`series-${s.series_id}`}>
-      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-1">
-        <span className="text-sm font-semibold">{s.series_id}</span>
-        <span className="text-xs text-gray-500">単位: {s.unit}</span>
+      <div className="mb-0.5 flex flex-wrap items-baseline justify-between gap-1">
+        <span className="text-sm font-semibold">{info.name}</span>
+        <span className="text-xs text-gray-500">
+          単位: {unitNote(s.unit)}
+        </span>
       </div>
+      <div className="mb-1 font-mono text-[10px] text-gray-400">{s.series_id}</div>
+      {info.desc && (
+        <p className="mb-1 text-[11px] leading-relaxed text-gray-600">{info.desc}</p>
+      )}
       <a
         href={s.url}
         target="_blank"
         rel="noopener noreferrer"
         className="text-xs text-blue-600 underline"
       >
-        {s.name}
+        出典: {s.name}
       </a>
       <table className="mt-2 w-full text-sm">
         <thead>
