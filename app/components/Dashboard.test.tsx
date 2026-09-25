@@ -94,6 +94,37 @@ const seriesFile: SeriesFile = {
   ],
 };
 
+function makeHouseholdSeries(): SeriesFile {
+  // 2024-01 から連続14か月（2025-01/02 は前年同月があり YoY 算出可能）。
+  const pts = (base: number) =>
+    Array.from({ length: 14 }, (_, i) => {
+      const y = 2024 + Math.floor(i / 12);
+      const m = (i % 12) + 1;
+      return { date: `${y}-${String(m).padStart(2, "0")}-01`, value: base + i * 100 };
+    });
+  return {
+    generated_at: "2026-06-22T00:00:00Z",
+    series: [
+      {
+        series_id: "household.food.real_yoy",
+        name: "総務省 家計調査",
+        url: "https://www.stat.go.jp/data/kakei/",
+        unit: "yoy_pct",
+        frequency: "monthly",
+        points: pts(80000),
+      },
+      {
+        series_id: "household.clothing.real_yoy",
+        name: "総務省 家計調査",
+        url: "https://www.stat.go.jp/data/kakei/",
+        unit: "yoy_pct",
+        frequency: "monthly",
+        points: pts(9000),
+      },
+    ],
+  };
+}
+
 function renderDashboard(opts: {
   dff?: DriverForecastFile | null;
   series?: SeriesFile | null;
@@ -154,6 +185,15 @@ describe("Simulator interactions", () => {
     const input = screen.getByLabelText("食料価格(CPI)の着地値");
     fireEvent.change(input, { target: { value: "0.2" } });
     expect(screen.getByTestId("food-next").textContent).not.toEqual(before);
+  });
+
+  it("toggles between real and nominal when household series are present", () => {
+    renderDashboard({ series: makeHouseholdSeries() });
+    // 既定は実質。
+    expect(screen.getByTestId("food-next").textContent).toContain("実質");
+    const group = screen.getByRole("group", { name: "実質名目切替" });
+    fireEvent.click(within(group).getByRole("button", { name: "名目" }));
+    expect(screen.getByTestId("food-next").textContent).toContain("名目");
   });
 
   it("changes the forecast horizon", () => {

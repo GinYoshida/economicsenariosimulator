@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildLinearPath,
   monthOf,
+  nominalYoY,
   simulateConsumption,
 } from "@/app/lib/minlagSim";
 import type { MinlagCategory } from "@/app/lib/artifacts";
@@ -33,6 +34,22 @@ const MODEL: MinlagCategory = {
   r2: 0.5,
   resid_std: 0.1,
 };
+
+describe("nominalYoY", () => {
+  it("computes YoY vs 12 months prior (single point = raw YoY)", () => {
+    const pts = [
+      { date: "2024-01-01", value: 100 },
+      { date: "2025-01-01", value: 110 },
+    ];
+    // only 2025-01 has a 12-month-prior value: 110/100-1 = 0.10
+    expect(nominalYoY(pts)["2025-01-01"]).toBeCloseTo(0.1, 6);
+  });
+
+  it("skips months without a prior-year value", () => {
+    const pts = [{ date: "2025-03-01", value: 50 }];
+    expect(Object.keys(nominalYoY(pts))).toHaveLength(0);
+  });
+});
 
 describe("simulateConsumption", () => {
   it("applies drivers, AR recursion and monthly intercept", () => {

@@ -21,9 +21,10 @@ import type {
   Baseline,
   DriverForecastFile,
   MinlagModelFile,
+  SeriesFile,
 } from "@/app/lib/artifacts";
 import { addMonths } from "@/app/lib/fanForecast";
-import { buildLinearPath, simulateConsumption } from "@/app/lib/minlagSim";
+import { buildLinearPath, nominalYoY, simulateConsumption } from "@/app/lib/minlagSim";
 import { TARGET_SHORT, driverAxisLabel } from "@/app/lib/labels";
 
 // 横軸（表示期間）の選択肢。既定は直近3年＋予測。
@@ -59,16 +60,31 @@ export default function Simulator({
   minlag,
   driverForecasts,
   baseline,
+  series = null,
   backtestFallback,
 }: {
   minlag: MinlagModelFile;
   driverForecasts: DriverForecastFile | null;
   baseline: Baseline;
+  series?: SeriesFile | null;
   backtestFallback?: { category: string; date: string; actual: number; predicted: number }[];
 }) {
   const z = driverForecasts?.z ?? 1.2816;
   const maxHorizon = driverForecasts?.horizon ?? 12;
   const lastDate = baseline.history.at(-1)?.date ?? "2024-01-01";
+
+  // 名目YoY（生金額から算出）。実質/名目トグルで使う。
+  const nominalMap = useMemo(() => {
+    const byId: Record<string, { date: string; value: number | null }[]> = {};
+    for (const s of series?.series ?? []) byId[s.series_id] = s.points;
+    return {
+      food: nominalYoY(byId["household.food.real_yoy"] ?? []),
+      clothing: nominalYoY(byId["household.clothing.real_yoy"] ?? []),
+    };
+  }, [series]);
+  const hasNominal =
+    Object.keys(nominalMap.food).length > 0 ||
+    Object.keys(nominalMap.clothing).length > 0;
 
   const catModel = useMemo(() => {
     const m: Record<string, MinlagModelFile["categories"][number]> = {};
@@ -119,6 +135,7 @@ export default function Simulator({
   const [seq, setSeq] = useState(1);
   const [windowKey, setWindowKey] = useState("3y");
   const [analysisCat, setAnalysisCat] = useState<"food" | "clothing">("food");
+  const [metric, setMetric] = useState<"real" | "nominal">("real");
 
   const windowMonths =
     WINDOW_OPTIONS.find((w) => w.key === windowKey)?.months ?? Infinity;
@@ -163,18 +180,48 @@ export default function Simulator({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catModel, driverPaths, lastDate, horizon]);
 
-  // カテゴリチャート用の行（履歴実績＋シナリオ予測）。
-  function rowsFor(cat: string, actualOf: (h: Baseline["history"][number]) => number): CategoryRow[] {
+  // カテゴリチャート用の行（履歴実績＋シナリオ予測）。metric で実質/名目を切替。
+  // 名目予測＝(1+実質)×(1+CPIのYoYパス)−1。CPIパスはユーザーの読み（着地値）。
+  const cpiIdOf = { food: "cpi.food", clothing: "cpi.clothing" } as const;
+  function rowsFor(cat: "food" | "clothing"): CategoryRow[] {
+    const realActual = (h: Baseline["history"][number]) =>
+      cat === "food" ? h.food_yoy : h.clothing_yoy;
+    const nomActual = nominalMap[cat];
+    const cpiPath = driverPaths[cpiIdOf[cat]] ?? [];
     const out: CategoryRow[] = [];
-    for (const h of baseline.history)
-      out.push({ date: h.date, kind: "history", actual: actualOf(h), center: null, sd: null });
-    for (const p of sim[cat] ?? [])
-      out.push({ date: p.date, kind: "forecast", actual: null, center: p.mean, sd: p.sd });
+    for (const h of baseline.history) {
+      const actual =
+        metric === "nominal" ? nomActual[h.date.slice(0, 10)] ?? null : realActual(h);
+      out.push({ date: h.date, kind: "history", actual, center: null, sd: null });
+    }
+    (sim[cat] ?? []).forEach((p, k) => {
+      let center = p.mean;
+      let sd = p.sd;
+      if (metric === "nominal") {
+        const cpi = Number.isFinite(cpiPath[k]) ? cpiPath[k] : 0;
+        center = (1 + p.mean) * (1 + cpi) - 1;
+        sd = p.sd * (1 + cpi);
+      }
+      out.push({ date: p.date, kind: "forecast", actual: null, center, sd });
+    });
     // 横軸フィルタ（予測は常に残す）。
     return out.filter((r) => r.kind === "forecast" || !cutoff || r.date >= cutoff);
   }
-  const foodRows = rowsFor("food", (h) => h.food_yoy);
-  const clothingRows = rowsFor("clothing", (h) => h.clothing_yoy);
+  const foodRows = rowsFor("food");
+  const clothingRows = rowsFor("clothing");
+  const metricLabel = metric === "nominal" ? "名目" : "実質";
+  const chartSubtitle =
+    metric === "nominal"
+      ? "名目消費支出 前年同月比（％）／家計調査・二人以上世帯"
+      : TARGET_SHORT;
+  // 直近値（トグルに応じて実質/名目）。
+  const nextVal = (cat: "food" | "clothing") => {
+    const r = foodClothingRows(cat).find((x) => x.kind === "forecast");
+    return r?.center ?? null;
+  };
+  function foodClothingRows(cat: "food" | "clothing") {
+    return cat === "food" ? foodRows : clothingRows;
+  }
 
   function saveScenario() {
     if (saved.length >= MAX_SAVED) return;
@@ -262,11 +309,34 @@ export default function Simulator({
             ))}
           </select>
         </label>
+        {hasNominal && (
+          <div role="group" aria-label="実質名目切替" className="flex gap-1">
+            {(["real", "nominal"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMetric(m)}
+                aria-pressed={metric === m}
+                className={`rounded px-2 py-0.5 ${
+                  metric === m ? "bg-gray-800 text-white" : "bg-gray-100"
+                }`}
+              >
+                {m === "real" ? "実質" : "名目"}
+              </button>
+            ))}
+          </div>
+        )}
         <span className="ml-auto flex gap-3" data-testid="sim-next">
-          <span data-testid="food-next">食料 実質前年比: {pct(sim.food?.[0]?.mean)}</span>
-          <span data-testid="clothing-next">衣料 実質前年比: {pct(sim.clothing?.[0]?.mean)}</span>
+          <span data-testid="food-next">食料 {metricLabel}前年比: {pct(nextVal("food"))}</span>
+          <span data-testid="clothing-next">衣料 {metricLabel}前年比: {pct(nextVal("clothing"))}</span>
         </span>
       </div>
+
+      {metric === "nominal" && (
+        <p className="-mt-3 text-[10px] text-gray-400">
+          名目＝実際に使った金額の前年比。実質との差がインフレ寄与です（名目予測はあなたのCPIの読みで換算）。
+        </p>
+      )}
 
       {/* 消費予測（出力） */}
       <div data-testid="forecast-chart" className="flex flex-col gap-4">
@@ -277,7 +347,7 @@ export default function Simulator({
           horizon={horizon}
           rows={foodRows}
           boundaryDate={lastDate}
-          subtitle={TARGET_SHORT}
+          subtitle={chartSubtitle}
           testId="forecast-chart-food"
         />
         <CategoryChart
@@ -287,7 +357,7 @@ export default function Simulator({
           horizon={horizon}
           rows={clothingRows}
           boundaryDate={lastDate}
-          subtitle={TARGET_SHORT}
+          subtitle={chartSubtitle}
           testId="forecast-chart-clothing"
         />
       </div>

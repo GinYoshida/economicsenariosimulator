@@ -28,6 +28,30 @@ export function buildLinearPath(
   return out;
 }
 
+/** 生の名目金額系列から名目YoY（前年同月比）を算出し、3か月移動平均で平滑する。
+ * data タブと同じ生系列（household.*.real_yoy＝名目金額）から求める。 */
+export function nominalYoY(
+  points: { date: string; value: number | null }[],
+): Record<string, number> {
+  const amt: Record<string, number> = {};
+  for (const p of points) if (p.value != null) amt[p.date.slice(0, 10)] = p.value;
+  const raw: Record<string, number> = {};
+  for (const d of Object.keys(amt)) {
+    const prev = addMonths(d, -12);
+    if (amt[prev] != null && amt[prev] !== 0) raw[d] = amt[d] / amt[prev] - 1;
+  }
+  // 3か月移動平均（連続する月のみ・panel の denoise を近似）。
+  const dates = Object.keys(raw).sort();
+  const out: Record<string, number> = {};
+  for (let i = 0; i < dates.length; i++) {
+    const w = [raw[dates[i]]];
+    if (i >= 1 && dates[i - 1] === addMonths(dates[i], -1)) w.push(raw[dates[i - 1]]);
+    if (i >= 2 && dates[i - 2] === addMonths(dates[i], -2)) w.push(raw[dates[i - 2]]);
+    out[dates[i]] = w.reduce((a, b) => a + b, 0) / w.length;
+  }
+  return out;
+}
+
 export type SimPoint = { date: string; mean: number; sd: number };
 
 /** 翻訳器でカテゴリ消費を逐次計算する。

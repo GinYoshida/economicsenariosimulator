@@ -83,6 +83,7 @@ export default function Dashboard({
             minlag={minlag}
             driverForecasts={driverForecasts}
             baseline={baseline}
+            series={series}
             backtestFallback={backtest.predictions ?? []}
           />
         ) : (
