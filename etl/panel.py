@@ -32,6 +32,17 @@ DEFAULT_YOY_SERIES: set[str] = {
     "fut.usdjpy",
 }
 
+# 円建て商品価格（ドル建て先物 × ドル円）。日本の輸入コストの実態に近い。
+# ドル建て国際価格が横ばいでも円安で輸入コストは上がるため、物価・消費の説明に使う。
+# 取得系列ではなくパネル構築時に派生させ、前年比に変換する。
+JPY_DERIVED: dict[str, str] = {
+    "fut.wheat_jpy": "fut.wheat",
+    "fut.soybean_jpy": "fut.soybean",
+    "fut.sugar_jpy": "fut.sugar",
+    "fut.cotton_jpy": "fut.cotton",
+}
+FX_SERIES = "fut.usdjpy"
+
 
 # ノイズの大きい目的変数（家計調査の名目YoY）に平滑・ハズレ値処理を適用する。
 # 衣料は月次変動が激しく、単月で±数十%の前年比になり得るため。
@@ -93,6 +104,15 @@ def build_panel(
 
     if min_date is None:
         return pd.DataFrame()
+
+    # 円建て派生系列（水準どうしを掛けてから前年比へ）。
+    yoy_series = set(yoy_series)
+    fx = columns.get(FX_SERIES)
+    if fx is not None:
+        for derived, usd in JPY_DERIVED.items():
+            if usd in columns:
+                columns[derived] = (columns[usd] * fx).dropna()
+                yoy_series.add(derived)
 
     index = pd.date_range(min_date, max_date, freq="MS")
     panel = pd.DataFrame(index=index)

@@ -81,6 +81,11 @@ DRIVER_LABELS: dict[str, str] = {
     "fut.soybean": "大豆先物",
     "fut.sugar": "砂糖先物",
     "fut.cotton": "綿先物",
+    # 円建て（ドル建て先物 × ドル円）＝日本の輸入コストの実態。
+    "fut.wheat_jpy": "小麦先物(円建て)",
+    "fut.soybean_jpy": "大豆先物(円建て)",
+    "fut.sugar_jpy": "砂糖先物(円建て)",
+    "fut.cotton_jpy": "綿先物(円建て)",
     "fut.usdjpy": "ドル円先物",
     # 自己回帰（前値）＝ナイーブ土台。係数はほぼ persistence（φ）。
     "household.food.real_yoy": "食料 前値(自己相関)",
@@ -107,7 +112,10 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
         # 天候（外生・公知）: 感度は小さいが供給/行動ショックの参考として残置。
         "weather.summer_days": 1,
         "weather.heavy_rain_days": 1,
-        "fut.wheat": 2,
+        # 商品先物は円建て（円安による輸入コスト上昇を反映）。ドル建てとの比較検証で
+        # 食料の方向的中率が全ホライズンで改善（h=2,3 で有意）したため採用。
+        "fut.wheat_jpy": 2,
+        "fut.sugar_jpy": 2,
     },
     "clothing": {
         "household.clothing.real_yoy": AR_LAG,  # 前値（ナイーブ土台）
@@ -115,7 +123,7 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
         "wage.cash_earnings": 2,   # 名目給与YoY（衣料は所得感応・寄与大）
         "cao.cci.attitude": 1,
         "cao.watcher.current": 1,  # 景気ウォッチャー現状DI（衣料で有意な方）
-        "fut.cotton": 2,
+        "fut.cotton_jpy": 2,       # 綿先物（円建て）
     },
 }
 
