@@ -1,101 +1,107 @@
 {
-  "generated_at": "2026-11-02T22:57:54.475765+00:00",
+  "generated_at": "2026-11-02T23:19:19.086663+00:00",
   "categories": [
     {
       "category": "food",
-      "intercept": 0.0015782726831506592,
+      "intercept": 0.0034441477263788727,
       "drivers": [
         {
           "driver": "household.food.real_yoy",
           "label_ja": "食料 前値(自己相関)",
-          "coef": 0.5641633183208108,
+          "coef": 0.4616374412928953,
           "lag_months": 2
         },
         {
           "driver": "cpi.food",
           "label_ja": "食料価格(CPI)",
-          "coef": -0.1952838049413359,
+          "coef": -0.19287820648229215,
           "lag_months": 1
         },
         {
           "driver": "cao.cci.attitude",
           "label_ja": "消費者態度指数",
-          "coef": 0.00003450031670028567,
+          "coef": -0.00007914191789406736,
           "lag_months": 1
         },
         {
           "driver": "cao.watcher.outlook",
           "label_ja": "景気ウォッチャー先行きDI",
-          "coef": 7.2145978900874275e-6,
+          "coef": 0.00006552389772826083,
           "lag_months": 1
         },
         {
           "driver": "weather.summer_days",
           "label_ja": "真夏日割合",
-          "coef": 0.006704699329409402,
+          "coef": 0.0004281057971927749,
           "lag_months": 1
         },
         {
           "driver": "weather.heavy_rain_days",
           "label_ja": "豪雨日割合",
-          "coef": -0.057205869171324496,
+          "coef": -0.04961595421799884,
           "lag_months": 1
         },
         {
-          "driver": "fut.wheat",
-          "label_ja": "小麦先物",
-          "coef": -0.012472278672879748,
+          "driver": "fut.wheat_jpy",
+          "label_ja": "小麦先物(円建て)",
+          "coef": -0.007222246592993866,
+          "lag_months": 2
+        },
+        {
+          "driver": "fut.sugar_jpy",
+          "label_ja": "砂糖先物(円建て)",
+          "coef": -0.013605186358498868,
           "lag_months": 2
         }
       ],
-      "r2": 0.5626112730554735,
-      "resid_std": 0.009714190908990231,
+      "r2": 0.597243712637576,
+      "resid_std": 0.009321676045095869,
       "model_version": "v1",
       "data_vintage": "2026-10-01"
     },
     {
       "category": "clothing",
-      "intercept": -0.1988953057021204,
+      "intercept": -0.2117104187779174,
       "drivers": [
         {
           "driver": "household.clothing.real_yoy",
           "label_ja": "衣料 前値(自己相関)",
-          "coef": 0.48807111274100023,
+          "coef": 0.4687949904699446,
           "lag_months": 2
         },
         {
           "driver": "cpi.clothing",
           "label_ja": "被服価格(CPI)",
-          "coef": -0.7596910768630695,
+          "coef": -0.6551218444029178,
           "lag_months": 1
         },
         {
           "driver": "wage.cash_earnings",
           "label_ja": "現金給与総額(名目)",
-          "coef": 0.416566816378496,
+          "coef": 0.38548046450197043,
           "lag_months": 2
         },
         {
           "driver": "cao.cci.attitude",
           "label_ja": "消費者態度指数",
-          "coef": 0.00004555109223515019,
+          "coef": 0.0005591336071950439,
           "lag_months": 1
         },
         {
           "driver": "cao.watcher.current",
           "label_ja": "景気ウォッチャー現状DI",
-          "coef": 0.003897490581441724,
+          "coef": 0.003710130430495893,
           "lag_months": 1
         },
         {
-          "driver": "fut.cotton",
-          "label_ja": "綿先物",
-          "coef": 0.03347802243398164,
+          "driver": "fut.cotton_jpy",
+          "label_ja": "綿先物(円建て)",
+          "coef": 0.03326438265215663,
           "lag_months": 2
         }
       ],
-      "r2": 0.5816229437096314,
-      "resid_std": 0.04624036595754528,
+      "r2": 0.5854244503649642,
+      "resid_std": 0.04602980925287202,
       "model_version": "v1",
       "data_vintage": "2026-10-01"
     }
