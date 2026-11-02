@@ -51,7 +51,7 @@ from models.schema import (
 
 BACKTEST_HORIZON = 3
 BACKTEST_MIN_TRAIN = 24
-SERIES_TAIL = 120  # series.json に載せる直近月数（約10年）
+SERIES_TAIL = 360  # series.json に載せる直近月数（約30年＝全履歴。取得失敗時の前回値フォールバック元も兼ねる）
 FORECAST_HORIZON = 12  # ドライバー予測・ファンチャートのホライズン（1年）
 FORECAST_Z = 1.2816  # 80% 信頼帯
 ROLLING_TARGET_MONTHS = 48  # ローリング検証で対象にする直近月数（起点は+horizon分さかのぼる）

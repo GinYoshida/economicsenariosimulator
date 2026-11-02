@@ -90,3 +90,66 @@ def test_run_etl_cao_provider_writes_series():
     assert "cao.watcher.outlook" in summary["written"]
     df, _ = read_series(con, "cao.watcher.outlook")
     assert len(df) == 3
+
+
+def test_run_etl_fallback_keeps_series_when_fetch_fails():
+    con = duckdb.connect(":memory:")
+
+    def raises_runtime(spec, _app_id):
+        raise RuntimeError("502 Bad Gateway")
+
+    def fallback(spec):
+        return _frame(), _src(spec)
+
+    summary = run_etl(con, dispatchers={"futures": raises_runtime}, fallback=fallback)
+    fut_ids = {sid for sid, s in REGISTRY.items() if s.connector == "futures"}
+    # 前回値で補えた系列は stale（failed ではない）として書き込まれる。
+    assert fut_ids <= set(summary["written"])
+    assert fut_ids <= {sid for sid, _ in summary["stale"]}
+    assert not ({sid for sid, _ in summary["failed"]} & fut_ids)
+    df, _ = read_series(con, "fut.wheat")
+    assert len(df) == 3
+
+
+def test_run_etl_fallback_none_still_fails():
+    con = duckdb.connect(":memory:")
+
+    def raises_runtime(spec, _app_id):
+        raise RuntimeError("502 Bad Gateway")
+
+    summary = run_etl(
+        con, dispatchers={"futures": raises_runtime}, fallback=lambda spec: None
+    )
+    assert "fut.wheat" in {sid for sid, _ in summary["failed"]}
+    assert summary["stale"] == []
+
+
+def test_published_fallback_restores_with_original_fetch_time(tmp_path):
+    import json
+
+    from etl.run import published_fallback
+
+    (tmp_path / "series.json").write_text(json.dumps({
+        "generated_at": "2026-10-23T00:00:00+00:00",
+        "series": [{"series_id": "wage.cash_earnings", "name": "x", "url": "https://x",
+                    "unit": "yen", "frequency": "monthly",
+                    "points": [{"date": "2026-07-01", "value": 300000.0},
+                               {"date": "2026-08-01", "value": None},
+                               {"date": "2026-09-01", "value": 311563.0}]}],
+    }), encoding="utf-8")
+    (tmp_path / "sources.json").write_text(json.dumps([
+        {"series_id": "wage.cash_earnings", "retrieved_at": "2026-10-23T13:15:00+00:00"},
+    ]), encoding="utf-8")
+
+    load = published_fallback(tmp_path / "series.json", tmp_path / "sources.json")
+    df, src = load(REGISTRY["wage.cash_earnings"])
+    assert list(df["value"]) == [300000.0, 311563.0]  # None は除外
+    assert src.retrieved_at.date().isoformat() == "2026-10-23"  # 鮮度を偽らない
+    assert load(REGISTRY["cpi.food"]) is None  # 前回値が無い系列は None
+
+
+def test_published_fallback_missing_files_returns_none(tmp_path):
+    from etl.run import published_fallback
+
+    load = published_fallback(tmp_path / "nope.json", tmp_path / "nope2.json")
+    assert load(REGISTRY["wage.cash_earnings"]) is None
