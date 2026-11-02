@@ -20,6 +20,7 @@ from typing import Any
 
 import pandas as pd
 
+from etl.http import get_with_retry
 from etl.provenance import Source
 
 ESTAT_ENDPOINT = "https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData"
@@ -164,8 +165,7 @@ def fetch_estat(
 
         client = httpx.Client()
     try:
-        response = client.get(ESTAT_ENDPOINT, params=params, timeout=timeout)
-        response.raise_for_status()
+        response = get_with_retry(client, ESTAT_ENDPOINT, params=params, timeout=timeout)
         payload = response.json()
     finally:
         if owns_client:

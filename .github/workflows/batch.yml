@@ -8,6 +8,12 @@ name: Batch (refresh artifacts)
 # （このブランチが現在のデフォルト）。ESTAT_APP_ID など前提条件は登録済み。
 on:
   workflow_dispatch:
+  # .github/batch-trigger を更新して push すると即時実行（Actions 権限のない
+  # 自動化からも「今すぐ更新」を起動できるように）。成果物コミットは
+  # GITHUB_TOKEN で行うため、このトリガーが再発火してループすることはない。
+  push:
+    branches: [claude/superpowers-integration-abpbq9]
+    paths: [".github/batch-trigger"]
   schedule:
     - cron: "0 13 * * 5"   # 毎週金曜 13:00 UTC = 22:00 JST（最新の月次・先物・天候を取得）
 

@@ -22,6 +22,7 @@ from typing import Any
 
 import pandas as pd
 
+from etl.http import get_with_retry
 from etl.provenance import Source
 
 DASHBOARD_ENDPOINT = "https://dashboard.e-stat.go.jp/api/1.0/Json/getData"
@@ -150,8 +151,7 @@ def fetch_dashboard(
 
         client = httpx.Client()
     try:
-        response = client.get(DASHBOARD_ENDPOINT, params=params, timeout=timeout)
-        response.raise_for_status()
+        response = get_with_retry(client, DASHBOARD_ENDPOINT, params=params, timeout=timeout)
         payload = response.json()
     finally:
         if owns_client:
