@@ -143,3 +143,28 @@ def test_build_panel_applies_yoy_to_selected_series():
     # month 13 (2023-01) = 13/1 - 1
     assert panel.loc["2023-01-01", "lvl"] == pytest.approx(13 / 1 - 1)
     assert pd.isna(panel.loc["2022-06-01", "lvl"])  # within first 12 -> NaN
+
+
+# ---- 円建て派生系列（ドル建て先物 × ドル円）----
+
+def test_build_panel_derives_yen_commodities_as_yoy():
+    con = duckdb.connect(":memory:")
+    init_db(con)
+    # 小麦はドル建てで横ばい、ドル円は1年で +50%（100→150）。
+    write_series(con, "fut.wheat", _series("2024-01-01", 13, [600.0] * 13), _src("fut.wheat"))
+    fx = [100.0] * 12 + [150.0]
+    write_series(con, "fut.usdjpy", _series("2024-01-01", 13, fx), _src("fut.usdjpy"))
+
+    panel = build_panel(con, denoise_targets=set())
+    last = panel.index.max()
+    # ドル建て YoY は 0、円建て YoY は円安分の +50%。
+    assert panel.loc[last, "fut.wheat"] == pytest.approx(0.0)
+    assert panel.loc[last, "fut.wheat_jpy"] == pytest.approx(0.5)
+
+
+def test_build_panel_skips_yen_series_without_fx():
+    con = duckdb.connect(":memory:")
+    init_db(con)
+    write_series(con, "fut.wheat", _series("2024-01-01", 13, [600.0] * 13), _src("fut.wheat"))
+    panel = build_panel(con, denoise_targets=set())
+    assert "fut.wheat_jpy" not in panel.columns
