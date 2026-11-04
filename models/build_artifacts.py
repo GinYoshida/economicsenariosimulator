@@ -101,14 +101,17 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
     # 総合CPI(cpi.headline)は各カテゴリCPIと強く相関し係数を不安定化させたため
     # ドライバーからは外す（データソースとしては保持）。
     # ダイエット方針（共線性・寄与の実測に基づく間引き）:
-    #  - 景気ウォッチャー現状/先行きDIは相関0.75で重複 → カテゴリで効く方を1本だけ残す
-    #    （食料=先行きDI、衣料=現状DI）。
     #  - 標準化寄与がほぼ0の変数は削除（食料の名目賃金・大豆先物 等）。
+    #  - 景況感（景気ウォッチャー・消費者態度指数）は食料では使わない。必需品のため
+    #    情報は前値と食料CPIに吸収済みで、ラグ1〜3か月のどれを入れても OOS の方向
+    #    的中率は改善せず（先行きDI・現状DIはむしろ悪化）、ラグ1では符号が負に出る
+    #    （COVID期と共線性による見かけの効果）。
+    #  - 衣料は景況感が効く（裁量的支出）。現状DI(1か月ラグ)が最良で、態度指数は
+    #    現状DIと情報が重複し、併用すると OOS が悪化するため外す。
+    #  - 消費者態度指数はデータソースとしては保持（モデル不使用）。
     "food": {
         "household.food.real_yoy": AR_LAG,  # 前値（ナイーブ土台）
         "cpi.food": 1,
-        "cao.cci.attitude": 1,     # 消費者態度指数（景気動向指数個別系列・翌月上旬→1か月ラグ）
-        "cao.watcher.outlook": 1,  # 景気ウォッチャー先行きDI（食料で有意な方）
         # 天候（外生・公知）: 感度は小さいが供給/行動ショックの参考として残置。
         "weather.summer_days": 1,
         "weather.heavy_rain_days": 1,
@@ -121,7 +124,6 @@ CATEGORY_DRIVERS: dict[str, dict[str, int]] = {
         "household.clothing.real_yoy": AR_LAG,  # 前値（ナイーブ土台）
         "cpi.clothing": 1,
         "wage.cash_earnings": 2,   # 名目給与YoY（衣料は所得感応・寄与大）
-        "cao.cci.attitude": 1,
         "cao.watcher.current": 1,  # 景気ウォッチャー現状DI（衣料で有意な方）
         "fut.cotton_jpy": 2,       # 綿先物（円建て）
     },
